@@ -2,7 +2,11 @@ from pymongo import MongoClient
 from pymongo import InsertOne, DeleteOne, UpdateOne
 
 import argparse, dateutil.parser, datetime
-import math, requests, urllib.parse
+import math, os, sys
+import requests, urllib.parse
+
+directory = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(directory, '..', '..'))
 
 from models.note import Note
 
@@ -15,7 +19,7 @@ collection = client.notesreview.notes
 def update(limit=100):
     now = datetime.datetime.utcnow() # This variable is used by the while loop to ensure only notes of a specific timespan are fetched
     update_start_time = now # The start time of this function is used at the end to update the timestamp of the last update
-    with open('LAST_UPDATE.txt') as file: stop_date = dateutil.parser.parse(file.read())
+    with open(os.path.join(directory, 'LAST_UPDATE.txt')) as file: stop_date = dateutil.parser.parse(file.read())
 
     diff = (now - stop_date).total_seconds()
     # TODO: figure out what might be a useful limit
@@ -54,7 +58,7 @@ def update(limit=100):
     This summary only affects notes updated after {stop_date}
     """)
 
-    with open('LAST_UPDATE.txt', 'w') as file: file.write(update_start_time.strftime("%Y-%m-%dT%H:%M:%S"))
+    with open(os.path.join(directory, 'LAST_UPDATE.txt'), 'w') as file: file.write(update_start_time.strftime("%Y-%m-%dT%H:%M:%S"))
     #### ---------------- ####
 
 def build_url(query={}):
