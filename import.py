@@ -4,6 +4,7 @@ from lxml import etree
 from pymongo import MongoClient
 
 client = MongoClient('mongodb://127.0.0.1:27017/')
+# client.drop_database('notesreview') # WARNING: Use with care!
 collection = client.notesreview.notes
 
 # Parses an XML file containing all notes and inserts them into the database

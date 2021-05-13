@@ -1,6 +1,5 @@
 from pymongo import MongoClient
 from pymongo import InsertOne, DeleteOne, UpdateOne
-from pymongo.errors import BulkWriteError
 
 import argparse, dateutil.parser, datetime
 import math, requests, urllib.parse
@@ -8,7 +7,6 @@ import math, requests, urllib.parse
 from models.note import Note
 
 client = MongoClient('mongodb://127.0.0.1:27017/')
-# client.drop_database('notesreview') # WARNING: Use with care!
 collection = client.notesreview.notes
 
 # Fills the database up by iterating over the OSM Notes API
@@ -20,12 +18,12 @@ def update(limit=100):
     with open('LAST_UPDATE.txt') as file: stop_date = dateutil.parser.parse(file.read())
 
     diff = (now - stop_date).total_seconds()
-    # Estimate a useful limit with one note action every fifteen seconds
     # TODO: figure out what might be a useful limit
-    useful_limit = math.ceil(diff * (1 / 15)) # use min(10000, useful_limit) to get a limit not higher than the API limit of 10000
-    print('Difference since last check in seconds: {} Expected useful limit: {}'.format(diff, useful_limit))
+    useful_limit = math.ceil(diff * (1 / 20)) # Estimate a useful limit with a new note action every 20 seconds
+    useful_limit = min(10000, useful_limit)
+    print('Difference since last check in seconds: {} Expected useful limit: {}\n'.format(diff, useful_limit))
 
-    all_stats = [0, 0, 0] # 1. Added, 2. Updated, 3. Ignored
+    all_stats = [0, 0, 0, 0] # 0. Deleted 1. Added, 2. Updated, 3. Ignored
     all_ignored = False
 
     # Either stop in case the stop date (i.e. the date of the last update) is exceeded or all notes are being ignored when inserting
@@ -41,20 +39,21 @@ def update(limit=100):
 
         stats, oldest = insert(features)
         all_stats = [sum(x) for x in zip(all_stats, stats)]
-        all_ignored = stats[2] == len(features) # Check whether all features were ignored, meaning there are no updates anymore
+        all_ignored = stats[3] == len(features) # Check whether all features were ignored, meaning there are no updates anymore
         now = oldest
+        if now is None or all_ignored == True: break
 
     print(f"""
     --------------------
     UPDATE SUMMARY
     --------------------
-    Added {all_stats[0]} new notes
-    Updated {all_stats[1]} already existing notes
-    Ignored {all_stats[2]} already existing notes
-    This summary only affects notes updated after {now}
+    Attempted to delete {all_stats[0]} notes
+    Added {all_stats[1]} new notes
+    Updated {all_stats[2]} already existing notes
+    Ignored {all_stats[3]} already existing notes
+    This summary only affects notes updated after {stop_date}
     """)
 
-    # TODO: rather save this information in a MongoDB collection if possible
     with open('LAST_UPDATE.txt', 'w') as file: file.write(update_start_time.strftime("%Y-%m-%dT%H:%M:%S"))
     #### ---------------- ####
 
@@ -71,11 +70,13 @@ def build_url(query={}):
     return url
 
 # Loops through the provided list of notes and:
-# - adds notes if they are unknown
-# - updates notes if there is a different version
-# - ignores notes which are the same
+# - Adds notes if they are unknown
+# - Updates notes if there is a different version
+# - Ignores notes which are the same
 def insert(features):
     operations = []
+    deleted = 0
+    inserted = 0
     updated = 0
     ignored = 0
     oldest = None
@@ -92,6 +93,7 @@ def insert(features):
             # especially as the comments might have been removed by a moderator
             # and should not be visible to the public
             operations.append(DeleteOne(query))
+            deleted += 1
             continue
 
         # TODO: this method of receiving the last updated note is not working reliable
@@ -102,6 +104,7 @@ def insert(features):
 
         # Try to find the oldest note based on the last update (this is needed for the next API request)
         # It also filters dates that differ a lot (the current threshold is at one hour (60 * 60 = 3600))
+        # to prevent the issue mentioned above
         last_changed = note.comments[-1]['date']
         if oldest is None or (last_changed < oldest and (oldest - last_changed).total_seconds() < (60 * 60)): oldest = last_changed
 
@@ -109,6 +112,7 @@ def insert(features):
         if document is None:
             # Note is not yet in the database, insert it
             operations.append(InsertOne(note.to_dict()))
+            inserted += 1
         else:
             # Note is already in the database
             if note.to_dict() == document:
@@ -116,6 +120,8 @@ def insert(features):
                 ignored += 1
             else:
                 # Note is different to the one that is already saved, needs to be updated
+                # This may happen quite often as the notes dump seems to contain comments that are actually hidden
+                # So after the initial import, a difference in the comments attached to a note may be detected
                 operations.append(UpdateOne(query, {'$set': {
                     'status': note.status,
                     'updated_at': note.updated_at,
@@ -123,10 +129,12 @@ def insert(features):
                 }}))
                 updated += 1
 
-    print('Executing {} operations'.format(len(operations)))
-    result = collection.bulk_write(operations, ordered=False)
-    print(result.bulk_api_result)
-    return [result.inserted_count, updated, ignored], oldest
+    if len(operations) != 0:
+        result = collection.bulk_write(operations, ordered=False)
+        print(result.bulk_api_result)
+
+    print('Executed {} operations\n'.format(len(operations)))
+    return [deleted, inserted, updated, ignored], oldest
 
 parser = argparse.ArgumentParser(description='Update notes between the last check and now.')
 parser.add_argument('-l', '--limit', type=int, default=100, help='set the batch size limit (default: 100)')

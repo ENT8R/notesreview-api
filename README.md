@@ -1,3 +1,13 @@
+## Development
+###### Using Ubuntu on Windows
+`wt -p "Ubuntu"`
+
+###### Activate virtual environment
+`source venv/bin/activate`
+
+###### Start the API
+`sanic app.app`
+
 ## Scripts
 ###### `import.py`
 import all notes from the latest notes dump (hosted on https://planet.openstreetmap.org/ or any other mirror):
