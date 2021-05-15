@@ -1,19 +1,22 @@
 from db.query import Filter
 
 import orjson
+from motor.motor_asyncio import AsyncIOMotorClient
+
 from sanic import Sanic
-from sanic.response import json
-from sanic_motor import BaseModel
+from sanic.response import raw, json
 
 app = Sanic(__name__)
-settings = dict(
-    MOTOR_URI='mongodb://127.0.0.1:27017/notesreview'
-)
-app.config.update(settings)
-BaseModel.init_app(app)
 
-class NotesModel(BaseModel):
-    __coll__ = 'notes'
+@app.before_server_start
+async def setup(app, loop):
+    client = AsyncIOMotorClient('mongodb://127.0.0.1:27017', io_loop=loop)
+    app.ctx.client = client
+    app.ctx.db = client.notesreview
+
+@app.before_server_stop
+async def shutdown(app, loop):
+    app.ctx.client.close()
 
 @app.get('/search')
 async def search(request):
@@ -50,5 +53,7 @@ async def search(request):
     if limit == 0:
         limit = DEFAULT_LIMIT # Prevent that a limit of 0 is treated as no limit at all
 
-    notes = await NotesModel.find(filter=filter, limit=limit, sort=sort, as_raw=True)
-    return json(notes.objects, dumps=orjson.dumps)
+    cursor = app.ctx.db.notes.find(filter).limit(limit).sort(sort)
+    result = []
+    async for document in cursor: result.append(document)
+    return json(result, dumps=orjson.dumps)

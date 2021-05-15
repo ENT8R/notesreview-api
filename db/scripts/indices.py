@@ -12,5 +12,5 @@ collection.create_index([('coordinates', pymongo.GEOSPHERE)], name='coordinates'
 collection.create_index('status', name='status', background=RUN_IN_BACKGROUND)
 
 collection.create_index('comments.0.user', name='author', background=RUN_IN_BACKGROUND)
-# TODO: this text index is way too big and slows everything down
-# collection.create_index([('comments.text', pymongo.TEXT)], default_language='none', name='text', background=RUN_IN_BACKGROUND)
+
+collection.create_index([('comments.text', pymongo.TEXT)], default_language='none', name='text', background=RUN_IN_BACKGROUND)
