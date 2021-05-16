@@ -56,5 +56,6 @@ async def search(request):
 
     cursor = app.ctx.db.notes.find(filter).limit(limit).sort(*sort)
     result = []
-    async for document in cursor: result.append(document)
+    async for document in cursor:
+        result.append(document)
     return json(result, dumps=orjson.dumps)

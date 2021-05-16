@@ -38,7 +38,6 @@ def update(limit=100):
             'to': now.isoformat(),
             'limit': str(limit)
         })
-        print(url)
         response = requests.get(url).json()
         features = response['features']
 
@@ -142,9 +141,12 @@ def insert(features):
 
     if len(operations) != 0:
         result = collection.bulk_write(operations, ordered=False)
-        print(result.bulk_api_result)
-
-    print('Executed {} operations\n'.format(len(operations)))
+        if result.bulk_api_result['writeErrors']:
+            client.events.errors.insert_one({
+                'type': 'update_error',
+                'timestamp': datetime.datetime.utcnow(),
+                'error': result.bulk_api_result['writeErrors']
+            })
     return [deleted, inserted, updated, ignored], oldest
 
 parser = argparse.ArgumentParser(description='Update notes between the last check and now.')
