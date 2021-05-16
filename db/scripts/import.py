@@ -1,8 +1,7 @@
-import os
 from dotenv import load_dotenv
 load_dotenv()
 
-import argparse, dateutil.parser
+import argparse, dateutil.parser, os
 from tqdm import tqdm
 from lxml import etree
 from pymongo import MongoClient
@@ -36,7 +35,7 @@ def insert(file):
             additions = []
             i = 0
 
-# Parses the comments of a note
+# Parse the comments and extract only the useful information
 def parse(note):
     comments = []
     for element in note:

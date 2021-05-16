@@ -8,13 +8,10 @@ import argparse, dateutil.parser, datetime
 import math, os, sys, textwrap
 import requests, urllib.parse
 
-directory = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(directory, '..', '..'))
-
-from models.note import Note
-
 client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
 collection = client.notesreview.notes
+
+DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
 # Fills the database up by iterating over the OSM Notes API
 # The current implementation is based on the last update of a note,
@@ -22,7 +19,7 @@ collection = client.notesreview.notes
 def update(limit=100):
     now = datetime.datetime.utcnow() # This variable is used by the while loop to ensure only notes of a specific timespan are fetched
     update_start_time = now # The start time of this function is used at the end to update the timestamp of the last update
-    with open(os.path.join(directory, 'LAST_UPDATE.txt')) as file: stop_date = dateutil.parser.parse(file.read())
+    with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt')) as file: stop_date = dateutil.parser.parse(file.read())
 
     diff = (now - stop_date).total_seconds()
     useful_limit = math.ceil(diff * (1 / 15)) # Estimate a useful limit with a new note action every 15 seconds
@@ -63,7 +60,7 @@ def update(limit=100):
     ----------------------------------------
     """))
 
-    with open(os.path.join(directory, 'LAST_UPDATE.txt'), 'w') as file: file.write(update_start_time.isoformat(timespec='seconds'))
+    with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt'), 'w') as file: file.write(update_start_time.isoformat(timespec='seconds'))
     #### ---------------- ####
 
 def build_url(query={}):
@@ -78,6 +75,19 @@ def build_url(query={}):
     url = host + '?' + urllib.parse.urlencode({**defaults, **query})
     return url
 
+# Parse the comments and extract only the useful information
+def parse(comments):
+    for comment in comments:
+        if 'date' in comment:
+            comment['date'] = dateutil.parser.parse(comment['date'], ignoretz=True)
+        if 'user_url' in comment:
+            del comment['user_url']
+        if 'html' in comment:
+            del comment['html']
+        if not comment['text']:
+            del comment['text']
+    return comments
+
 # Loops through the provided list of notes and:
 # - Adds notes if they are unknown
 # - Updates notes if there is a different version
@@ -91,13 +101,20 @@ def insert(features):
     oldest = None
 
     for feature in features:
-        note = Note(feature)
-        query = {'_id': note.id}
+        comments = parse(feature['properties']['comments'])
+        note = {
+            '_id': feature['properties']['id'],
+            'coordinates': feature['geometry']['coordinates'],
+            'status': feature['properties']['status'],
+            'updated_at': None if len(comments) == 0 else comments[-1]['date'],
+            'comments': comments
+        }
+        query = {'_id': note['_id']}
 
         # If comments are invisible because of account deletion or other reasons,
         # a note might not contain any comments at all
         # see also https://github.com/openstreetmap/openstreetmap-website/issues/2146
-        if len(note.comments) == 0:
+        if len(note['comments']) == 0:
             # Notes without any comments are basically useless and should be deleted,
             # especially as the comments might have been removed by a moderator
             # and should not be visible to the public
@@ -105,7 +122,7 @@ def insert(features):
             deleted += 1
             continue
 
-        # TODO: this method of receiving the last updated note is not working reliable
+        # TODO: This method of receiving the last updated note is not working reliable
         # as moderators might delete a comment which is just hidden to the users,
         # but still exists in the database so the API call to return the last updated notes
         # also includes these versions where some comments are missing
@@ -115,17 +132,17 @@ def insert(features):
         # Try to find the oldest note based on the last update (this is needed for the next API request)
         # It also filters dates that differ a lot (the current threshold is at one hour (60 * 60 = 3600))
         # to prevent the issue mentioned above
-        last_changed = note.comments[-1]['date']
+        last_changed = note['comments'][-1]['date']
         if oldest is None or (last_changed < oldest and (oldest - last_changed).total_seconds() < (60 * 60)): oldest = last_changed
 
         document = collection.find_one(query)
         if document is None:
             # Note is not yet in the database, insert it
-            operations.append(InsertOne(note.to_dict()))
+            operations.append(InsertOne(note))
             inserted += 1
         else:
             # Note is already in the database
-            if note.to_dict() == document:
+            if note == document:
                 # Note is the same as the one that is already saved, should be ignored
                 ignored += 1
             else:
@@ -133,9 +150,9 @@ def insert(features):
                 # This may happen quite often as the notes dump seems to contain comments that are actually hidden
                 # So after the initial import, a difference in the comments attached to a note may be detected
                 operations.append(UpdateOne(query, {'$set': {
-                    'status': note.status,
-                    'updated_at': note.updated_at,
-                    'comments': note.comments
+                    'status': note['status'],
+                    'updated_at': note['updated_at'],
+                    'comments': note['comments']
                 }}))
                 updated += 1
 
