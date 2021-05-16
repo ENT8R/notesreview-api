@@ -1,8 +1,11 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from pymongo import MongoClient
 from pymongo import InsertOne, DeleteOne, UpdateOne
 
 import argparse, dateutil.parser, datetime
-import math, os, sys
+import math, os, sys, textwrap
 import requests, urllib.parse
 
 directory = os.path.dirname(os.path.realpath(__file__))
@@ -10,7 +13,7 @@ sys.path.append(os.path.join(directory, '..', '..'))
 
 from models.note import Note
 
-client = MongoClient('mongodb://127.0.0.1:27017/')
+client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
 collection = client.notesreview.notes
 
 # Fills the database up by iterating over the OSM Notes API
@@ -22,10 +25,8 @@ def update(limit=100):
     with open(os.path.join(directory, 'LAST_UPDATE.txt')) as file: stop_date = dateutil.parser.parse(file.read())
 
     diff = (now - stop_date).total_seconds()
-    # TODO: figure out what might be a useful limit
-    useful_limit = math.ceil(diff * (1 / 20)) # Estimate a useful limit with a new note action every 20 seconds
+    useful_limit = math.ceil(diff * (1 / 15)) # Estimate a useful limit with a new note action every 15 seconds
     useful_limit = min(10000, useful_limit)
-    print('Difference since last check in seconds: {} Expected useful limit: {}\n'.format(diff, useful_limit))
 
     all_stats = [0, 0, 0, 0] # 0. Deleted 1. Added, 2. Updated, 3. Ignored
     all_ignored = False
@@ -47,18 +48,23 @@ def update(limit=100):
         now = oldest
         if now is None or all_ignored == True: break
 
-    print(f"""
-    --------------------
+    print(textwrap.dedent(f"""
+    ----------------------------------------
     UPDATE SUMMARY
+    --------------------
+    Last update:    {stop_date.isoformat(timespec='seconds')}
+    End of update:  {update_start_time.isoformat(timespec='seconds')}
+    Time in seconds since last update: {round(diff)}
+    Expected a useful limit of {useful_limit} while {all_stats[0] + all_stats[1] + all_stats[2]} was actually needed
     --------------------
     Attempted to delete {all_stats[0]} notes
     Added {all_stats[1]} new notes
     Updated {all_stats[2]} already existing notes
     Ignored {all_stats[3]} already existing notes
-    This summary only affects notes updated after {stop_date}
-    """)
+    ----------------------------------------
+    """))
 
-    with open(os.path.join(directory, 'LAST_UPDATE.txt'), 'w') as file: file.write(update_start_time.strftime("%Y-%m-%dT%H:%M:%S"))
+    with open(os.path.join(directory, 'LAST_UPDATE.txt'), 'w') as file: file.write(update_start_time.isoformat(timespec='seconds'))
     #### ---------------- ####
 
 def build_url(query={}):
@@ -105,6 +111,7 @@ def insert(features):
         # but still exists in the database so the API call to return the last updated notes
         # also includes these versions where some comments are missing
         # TODO: !URGENT! THIS SHOULD BE FIXED UPSTREAM => DON'T RETURN THESE NOTES WHEN FILTERING BY THE LAST CHANGE DATE
+        # -> This would in return mean that these notes are not updated in this database...
 
         # Try to find the oldest note based on the last update (this is needed for the next API request)
         # It also filters dates that differ a lot (the current threshold is at one hour (60 * 60 = 3600))
