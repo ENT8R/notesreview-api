@@ -1,0 +1,56 @@
+{
+  "$jsonSchema": {
+    "required": [ "_id", "coordinates", "status", "updated_at", "comments" ],
+    "properties": {
+      "_id": {
+        "bsonType": "int",
+        "description": "must be an int and is required"
+      },
+      "coordinates": {
+        "bsonType": "array",
+        "description": "must be an array and is required"
+      },
+      "status": {
+        "enum": [ "open", "closed" ],
+        "description": "can only be one of the enum values and is required"
+      },
+      "updated_at": {
+        "bsonType": "date",
+        "description": "must be a date and is required"
+      },
+      "comments": {
+        "bsonType": "array",
+        "description": "must be an array of objects and is required",
+        "items": {
+          "bsonType": "object",
+          "required": [
+            "date",
+            "action"
+          ],
+          "properties": {
+            "date": {
+              "bsonType": "date",
+              "description": "must be a date and is required"
+            },
+            "action": {
+              "enum": [ "opened", "commented", "closed", "reopened" ],
+              "description": "can only be one of the enum values and is required"
+            },
+            "text": {
+              "bsonType": "string",
+              "description": "must be a string and is not required"
+            },
+            "uid": {
+              "bsonType": "int",
+              "description": "must be an int and is not required"
+            },
+            "user": {
+              "bsonType": "string",
+              "description": "must be a string and is not required"
+            }
+          }
+        }
+      }
+    }
+  }
+}
