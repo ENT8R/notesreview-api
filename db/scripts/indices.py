@@ -12,7 +12,6 @@ RUN_IN_BACKGROUND = False
 # Apply validation schemes (requires the collection to exist)
 with open(os.path.join(DIRECTORY, '..', 'schema', 'schema.json')) as schema: schema = json.load(schema)
 db.command({ 'collMod': 'notes', 'validator': schema['notesreview.notes'] })
-db.command({ 'collMod': 'labels', 'validator': schema['notesreview.labels'] })
 
 # Create indices used for faster queries
 db.notes.create_index([('updated_at', pymongo.DESCENDING)], name='created_at', background=RUN_IN_BACKGROUND)

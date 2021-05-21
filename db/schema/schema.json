@@ -1,22 +1,4 @@
 {
-  "notesreview.labels": {
-    "$jsonSchema": {
-      "required": [
-        "_id",
-        "labels"
-      ],
-      "properties": {
-        "_id": {
-          "bsonType": "int",
-          "description": "must be an int and is required"
-        },
-        "labels": {
-          "bsonType": "array",
-          "description": "must be an array and is required"
-        }
-      }
-    }
-  },
   "notesreview.notes": {
     "$jsonSchema": {
       "required": [
