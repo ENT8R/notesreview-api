@@ -8,9 +8,11 @@ import orjson
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from sanic import Sanic
-from sanic.response import raw, json
+from sanic.response import json
+from sanic_cors import CORS
 
 app = Sanic(__name__)
+CORS(app)
 settings = dict(
     DEFAULT_LIMIT = 50,
     MAX_LIMIT = 100,
@@ -29,7 +31,7 @@ async def setup(app, loop):
 async def shutdown(app, loop):
     app.ctx.client.close()
 
-@app.get('/api/search')
+@app.route('/api/search', methods=['GET', 'OPTIONS'])
 async def search(request):
     try:
         sort = Sort().by(request.args.get('sort_by', 'updated_at')).order(request.args.get('order', 'descending')).build()
