@@ -35,6 +35,7 @@ async def search(request):
         sort = Sort().by(request.args.get('sort_by', 'updated_at')).order(request.args.get('order', 'descending')).build()
         filter = (Filter(sort)
                     .query(request.args.get('query')) # A word or sentence which can be found in the comments
+                    .bbox(request.args.get('bbox')) # A pair of coordinates specifying a rectangular box where all results are located in
                     .status(status = request.args.get('status')) # Whether the note is already closed or still open
                     .anonymous(request.args.get('anonymous', 'true')) # Whether anonymous notes should be included in the results
                     .author(request.args.get('author')) # Filter only notes created by the specified user
