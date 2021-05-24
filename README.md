@@ -1,24 +1,17 @@
-## Development
-###### Using Ubuntu on Windows
-`wt -p "Ubuntu"`
-
-###### Activate virtual environment
-`source venv/bin/activate`
-
-###### Start the API
-`sanic app.app`
-
-###### Visit the server
-`168.119.156.134`
+# notesreview-api
+> API and backend for [notesreview](https://github.com/ENT8R/notesreview)
 
 ## Scripts
-###### `import.py`
-Imports all notes from the latest notes dump (hosted on https://planet.openstreetmap.org/ or any other mirror):
+#### `import.py`
+```sh
+# Imports all notes from the latest notes dump
+# (hosted on https://planet.openstreetmap.org/ or any other mirror)
 
-`curl -o notes.osn.bz2 ${URL} && bzip2 -d notes.osn.bz2 && python db/scripts/import.py notes.osn`
-Where `${URL}` needs to be replaced with the location of the notes dump
+# ${URL} needs to be replaced with the location of the notes dump
+curl -o notes.osn.bz2 ${URL} && bzip2 -d notes.osn.bz2 && python db/scripts/import.py notes.osn
+```
 
-#### Structure
+##### Structure
 The structure of the notes dump follows this scheme:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -30,16 +23,17 @@ The structure of the notes dump follows this scheme:
 ```
 ---
 
-###### `indices.py`
-Creates all necessary indices for the database
-
-`python indices.py`
-
+#### `indices.py`
+```sh
+# Creates all necessary indices for the database
+python db/scripts/indices.py
+```
 ---
 
-###### `update.py`
-Updates the database by querying the OSM notes API in order to receive the latest notes since a given date of the last check
-
-`python update.py`
-
----
+#### `update.py`
+```sh
+# Updates the database by querying the OSM Notes API
+# in order to receive the latest notes
+# since a given date of the last check
+python db/scripts/update.py
+```
