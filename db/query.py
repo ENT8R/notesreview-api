@@ -60,11 +60,19 @@ class Filter(object):
         return self
 
     def anonymous(self, anonymous):
-        if anonymous is not None and anonymous == 'false':
+        if anonymous not in [None, 'include', 'hide', 'only']:
+            raise ValueError('Anonymous must be one of [include, hide, only]')
+
+        if anonymous is not None:
             # Filtering out anonymous notes means that there must be a user who created the note
-            self.filter['comments.0.user'] = {
-                '$exists': True
-            }
+            if anonymous == 'hide':
+                self.filter['comments.0.user'] = {
+                    '$exists': True
+                }
+            if anonymous == 'only':
+                self.filter['comments.0.user'] = {
+                    '$exists': False
+                }
         return self
 
     def author(self, author):

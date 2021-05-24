@@ -4,7 +4,8 @@ load_dotenv()
 from pymongo import MongoClient
 from pymongo import InsertOne, DeleteOne, UpdateOne
 
-import argparse, dateutil.parser, datetime
+import argparse, datetime
+import dateutil.parser
 import math, os, sys, textwrap
 import requests, urllib.parse
 
@@ -17,7 +18,7 @@ DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 # The current implementation is based on the last update of a note,
 # all notes between now and another given date (the date of the last update) are imported into the database
 def update(limit=100):
-    now = datetime.datetime.utcnow() # This variable is used by the while loop to ensure only notes of a specific timespan are fetched
+    now = datetime.datetime.now(datetime.timezone.utc) # This variable is used by the while loop to ensure only notes of a specific timespan are fetched
     update_start_time = now # The start time of this function is used at the end to update the timestamp of the last update
     with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt')) as file: stop_date = dateutil.parser.parse(file.read())
 
@@ -79,7 +80,7 @@ def build_url(query={}):
 def parse(comments):
     for comment in comments:
         if 'date' in comment:
-            comment['date'] = dateutil.parser.parse(comment['date'], ignoretz=True)
+            comment['date'] = dateutil.parser.parse(comment['date'])
         if 'user_url' in comment:
             del comment['user_url']
         if 'html' in comment:
@@ -161,7 +162,7 @@ def insert(features):
         if result.bulk_api_result['writeErrors']:
             client.events.errors.insert_one({
                 'type': 'update_error',
-                'timestamp': datetime.datetime.utcnow(),
+                'timestamp': datetime.datetime.now(datetime.timezone.utc),
                 'error': result.bulk_api_result['writeErrors']
             })
     return [deleted, inserted, updated, ignored], oldest

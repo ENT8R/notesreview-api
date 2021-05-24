@@ -1,10 +1,12 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-import argparse, dateutil.parser, os
+from pymongo import MongoClient
+
+import argparse, os
+import dateutil.parser
 from tqdm import tqdm
 from lxml import etree
-from pymongo import MongoClient
 
 client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
 # client.drop_database('notesreview') # WARNING: Use with care!
@@ -42,7 +44,7 @@ def parse(note):
         attributes = element.attrib
 
         comment = {
-            'date': dateutil.parser.parse(attributes['timestamp'], ignoretz=True),
+            'date': dateutil.parser.parse(attributes['timestamp']),
             'action': attributes['action'],
             'text': element.text
         }

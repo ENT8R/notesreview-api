@@ -39,7 +39,7 @@ async def search(request):
                     .query(request.args.get('query')) # A word or sentence which can be found in the comments
                     .bbox(request.args.get('bbox')) # A pair of coordinates specifying a rectangular box where all results are located in
                     .status(status = request.args.get('status')) # Whether the note is already closed or still open
-                    .anonymous(request.args.get('anonymous', 'true')) # Whether anonymous notes should be included in the results
+                    .anonymous(request.args.get('anonymous')) # Whether anonymous notes should be in-/excluded, or hidden in the results
                     .author(request.args.get('author')) # Filter only notes created by the specified user
                     .after(request.args.get('after', None)) # Filter only notes updated/created after this date
                     .before(request.args.get('before', None)) # Filter only notes updated/created before this date
@@ -61,4 +61,4 @@ async def search(request):
     result = []
     async for document in cursor:
         result.append(document)
-    return json(result, dumps=orjson.dumps)
+    return json(result, dumps=orjson.dumps, option=orjson.OPT_NAIVE_UTC)
