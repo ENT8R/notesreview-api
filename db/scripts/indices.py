@@ -14,8 +14,8 @@ with open(os.path.join(DIRECTORY, '..', 'schema', 'schema.json')) as schema: sch
 db.command({ 'collMod': 'notes', 'validator': schema['notesreview.notes'] })
 
 # Create indices used for faster queries
-db.notes.create_index([('updated_at', pymongo.DESCENDING)], name='created_at', background=RUN_IN_BACKGROUND)
-db.notes.create_index([('comments.0.date', pymongo.DESCENDING)], name='updated_at', background=RUN_IN_BACKGROUND)
+db.notes.create_index([('updated_at', pymongo.DESCENDING)], name='updated_at', background=RUN_IN_BACKGROUND)
+db.notes.create_index([('comments.0.date', pymongo.DESCENDING)], name='created_at', background=RUN_IN_BACKGROUND)
 db.notes.create_index([('coordinates', pymongo.GEOSPHERE)], name='coordinates', background=RUN_IN_BACKGROUND)
 db.notes.create_index('status', name='status', background=RUN_IN_BACKGROUND)
 db.notes.create_index('comments.0.user', name='author', background=RUN_IN_BACKGROUND)

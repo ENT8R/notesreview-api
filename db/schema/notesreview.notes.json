@@ -33,7 +33,7 @@
               "description": "must be a date and is required"
             },
             "action": {
-              "enum": [ "opened", "commented", "closed", "reopened" ],
+              "enum": [ "opened", "commented", "closed", "reopened", "hidden" ],
               "description": "can only be one of the enum values and is required"
             },
             "text": {

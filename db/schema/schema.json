@@ -47,7 +47,8 @@
                   "opened",
                   "commented",
                   "closed",
-                  "reopened"
+                  "reopened",
+                  "hidden"
                 ],
                 "description": "can only be one of the enum values and is required"
               },
