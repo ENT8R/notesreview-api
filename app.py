@@ -50,9 +50,15 @@ async def search(request):
 
     #----------------------------------------#
 
-    limit = int(request.args.get('limit', app.config.DEFAULT_LIMIT))
+    # Apply the default limit in case the argument could not be parsed (e.g. for limit=NaN)
+    try:
+        limit = int(request.args.get('limit', app.config.DEFAULT_LIMIT))
+    except ValueError as error:
+        limit = app.config.DEFAULT_LIMIT
+
     if limit > app.config.MAX_LIMIT:
         return json({'error': f'Limit must not be higher than {app.config.MAX_LIMIT}'}, status=400)
+
     # Prevent that a limit of 0 is treated as no limit at all
     if limit == 0:
         limit = app.config.DEFAULT_LIMIT
