@@ -52,10 +52,10 @@ class Filter(object):
         return self
 
     def status(self, status):
-        if status not in [None, 'open', 'closed']:
-            raise ValueError('Status must be one of [open, closed]')
+        if status not in [None, 'all', 'open', 'closed']:
+            raise ValueError('Status must be one of [all, open, closed]')
 
-        if status is not None:
+        if status not in [None, 'all']:
             self.filter['status'] = status
         return self
 
