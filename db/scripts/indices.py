@@ -3,7 +3,7 @@ load_dotenv()
 
 import json, os
 import pymongo
-client = pymongo.MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
+client = pymongo.MongoClient(f'mongodb://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}:27017/')
 db = client.notesreview
 
 DIRECTORY = os.path.dirname(os.path.realpath(__file__))
