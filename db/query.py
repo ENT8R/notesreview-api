@@ -1,4 +1,5 @@
 import dateutil.parser
+import re
 
 class Sort(object):
     def __init__(self):
@@ -33,8 +34,9 @@ class Filter(object):
 
     def query(self, query):
         if query is not None:
-            self.filter['$text'] = {
-                '$search': query
+            self.filter['comments.0.text'] = {
+                '$regex': query[len('regex:'):] if query.startswith('regex:') else re.escape(query),
+                '$options': 'i'
             }
         return self
 
