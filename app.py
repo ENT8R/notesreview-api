@@ -4,6 +4,7 @@ from textwrap import dedent
 from dotenv import load_dotenv
 load_dotenv()
 
+from api.note import Note
 from db.query import Filter, Sort
 
 import orjson
@@ -67,19 +68,7 @@ async def shutdown(app, loop):
 @openapi.parameter('sort_by', openapi.String(description='Sort notes either by the date of the last update or their creation date', enum=('updated_at', 'created_at'), default='updated_at'))
 @openapi.parameter('order', openapi.String(description='Sort notes either in ascending or descending order', enum=('descending', 'desc', 'ascending', 'asc'), default='descending'))
 @openapi.parameter('limit', openapi.Integer(description='Limit the amount of notes to return', minimum=1, maximum=app.config.MAX_LIMIT, default=app.config.DEFAULT_LIMIT))
-@openapi.response(200, openapi.Array(items=openapi.Object(properties={
-    '_id': openapi.Integer(),
-    'coordinates': openapi.Array(items=openapi.Float(), maxItems=2, minItems=2),
-    'status': openapi.String(),
-    'updated_at': openapi.DateTime(),
-    'comments': openapi.Array(items=openapi.Object(properties={
-        'date': openapi.DateTime(),
-        'action': openapi.String(enum=('opened', 'commented', 'reopened', 'closed')),
-        'text': openapi.String(),
-        'uid': openapi.Integer(),
-        'user': openapi.String()
-    }))
-}), uniqueItems=True), 'The response is an array containing the notes with the requested information')
+@openapi.response(200, openapi.Array(items=Note, uniqueItems=True), 'The response is an array containing the notes with the requested information')
 @openapi.response(400, openapi.Object(properties={
     'error': openapi.String()
 }), 'In case one of the parameters is invalid, the response contains the error message')
