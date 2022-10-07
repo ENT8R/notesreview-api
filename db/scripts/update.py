@@ -4,9 +4,9 @@ load_dotenv()
 from pymongo import MongoClient
 from pymongo import InsertOne, DeleteOne, UpdateOne
 
-import argparse, datetime
+import argparse, datetime, math, os, sys, textwrap
+
 import dateutil.parser
-import math, os, sys, textwrap
 import requests, urllib.parse
 
 client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
@@ -18,11 +18,11 @@ DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 # The current implementation is based on the last update of a note,
 # all notes between now and another given date (the date of the last update) are imported into the database
 def update(limit=100):
-    now = datetime.datetime.now(datetime.timezone.utc) # This variable is used by the while loop to ensure only notes of a specific timespan are fetched
-    update_start_time = now # The start time of this function is used at the end to update the timestamp of the last update
-    with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt')) as file: stop_date = dateutil.parser.parse(file.read())
+    upper_bound = datetime.datetime.now(datetime.timezone.utc) # This variable is used in the while loop to ensure only notes of a specific timespan are fetched
+    update_start_time = upper_bound # The start time of this function is used at the end to update the timestamp of the last update
+    with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt')) as file: last_update = dateutil.parser.parse(file.read())
 
-    diff = (now - stop_date).total_seconds()
+    diff = (upper_bound - last_update).total_seconds()
     useful_limit = math.ceil(diff * (1 / 15)) # Estimate a useful limit with a new note action every 15 seconds
     useful_limit = min(10000, useful_limit)
 
@@ -30,10 +30,10 @@ def update(limit=100):
     all_ignored = False
 
     # Either stop in case the stop date (i.e. the date of the last update) is exceeded or all notes are being ignored when inserting
-    while now > stop_date and all_ignored == False:
+    while upper_bound is not None and upper_bound > last_update and all_ignored == False:
         url = build_url({
-            'from': stop_date.isoformat(),
-            'to': now.isoformat(),
+            'from': last_update.isoformat(),
+            'to': upper_bound.isoformat(),
             'limit': str(limit)
         })
         response = requests.get(url).json()
@@ -42,19 +42,18 @@ def update(limit=100):
         stats, oldest = insert(features)
         all_stats = [sum(x) for x in zip(all_stats, stats)]
         all_ignored = stats[3] == len(features) # Check whether all features were ignored, meaning there are no updates anymore
-        now = oldest
-        if now is None or all_ignored == True: break
+        upper_bound = oldest
 
     print(textwrap.dedent(f"""
     ----------------------------------------
     UPDATE SUMMARY
     --------------------
-    Last update:    {stop_date.isoformat(timespec='seconds')}
+    Last update:    {last_update.isoformat(timespec='seconds')}
     End of update:  {update_start_time.isoformat(timespec='seconds')}
     Time in seconds since last update: {round(diff)}
     Expected a useful limit of {useful_limit} while {all_stats[0] + all_stats[1] + all_stats[2]} was actually needed
     --------------------
-    Attempted to delete {all_stats[0]} notes
+    Deleted {all_stats[0]} notes
     Added {all_stats[1]} new notes
     Updated {all_stats[2]} already existing notes
     Ignored {all_stats[3]} already existing notes
@@ -127,8 +126,6 @@ def insert(features):
         # as moderators might delete a comment which is just hidden to the users,
         # but still exists in the database so the API call to return the last updated notes
         # also includes these versions where some comments are missing
-        # TODO: !URGENT! THIS SHOULD BE FIXED UPSTREAM => DON'T RETURN THESE NOTES WHEN FILTERING BY THE LAST CHANGE DATE
-        # -> This would in return mean that these notes are not updated in this database...
 
         # Try to find the oldest note based on the last update (this is needed for the next API request)
         # It also filters dates that differ a lot (the current threshold is at one hour (60 * 60 = 3600))
@@ -170,4 +167,5 @@ def insert(features):
 parser = argparse.ArgumentParser(description='Update notes between the last check and now.')
 parser.add_argument('-l', '--limit', type=int, default=100, help='set the batch size limit (default: 100)')
 args = parser.parse_args()
+
 update(args.limit)
