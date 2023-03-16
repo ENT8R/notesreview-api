@@ -4,8 +4,8 @@ from textwrap import dedent
 from dotenv import load_dotenv
 load_dotenv()
 
-from api.note import Note
-from db.query import Filter, Sort
+from api.models.note import Note
+from api.query import Filter, Sort
 
 import orjson
 from motor.motor_asyncio import AsyncIOMotorClient
