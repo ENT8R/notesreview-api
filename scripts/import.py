@@ -16,6 +16,7 @@ load_dotenv()
 client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
 collection = client.notesreview.notes
 
+
 # Parses an XML file containing all notes and inserts them into the database
 def insert(file):
     # Notes are inserted/updated in batches of 50000
@@ -23,7 +24,8 @@ def insert(file):
 
     ids = set()
     operations = []
-    all_stats = [0, 0, 0, 0] # 0. Deleted 1. Added, 2. Updated, 3. Matched
+    # 0. Deleted 1. Added, 2. Updated, 3. Matched
+    all_stats = [0, 0, 0, 0]
 
     def process_element(element):
         nonlocal ids, operations, all_stats
@@ -39,7 +41,7 @@ def insert(file):
                 'updated_at': comments[-1]['date'],
                 'comments': comments
             }
-        except:
+        except Exception:
             tqdm.write(f'Failed to parse note with the id {id}')
             return
 
@@ -74,6 +76,7 @@ def insert(file):
     ----------------------------------------
     """))
 
+
 # Write operations to the database using the bulk write feature
 def write(operations):
     result = collection.bulk_write(operations, ordered=False)
@@ -88,6 +91,7 @@ def write(operations):
         result.bulk_api_result['nModified'], result.bulk_api_result['nMatched']
     ]
 
+
 # Parse the comments and extract only the useful information
 def parse(note):
     comments = []
@@ -99,12 +103,16 @@ def parse(note):
             'action': attributes['action'],
             'text': element.text
         }
-        if 'uid' in attributes: comment['uid'] = int(attributes['uid'])
-        if 'user' in attributes: comment['user'] = attributes['user']
-        if not element.text: del comment['text']
+        if 'uid' in attributes:
+            comment['uid'] = int(attributes['uid'])
+        if 'user' in attributes:
+            comment['user'] = attributes['user']
+        if not element.text:
+            del comment['text']
 
         comments.append(comment)
     return comments
+
 
 parser = argparse.ArgumentParser(description='Import notes from a notes dump.')
 parser.add_argument('file', type=str, help='path to the file which contains the notes dump')

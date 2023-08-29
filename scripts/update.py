@@ -17,23 +17,29 @@ collection = client.notesreview.notes
 
 DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
+
 # Fills the database up by iterating over the OSM Notes API
 # The current implementation is based on the last update of a note,
 # all notes between now and another given date (the date of the last update) are imported into the database
 def update(limit=100):
-    upper_bound = datetime.datetime.now(datetime.timezone.utc) # This variable is used in the while loop to ensure only notes of a specific timespan are fetched
-    update_start_time = upper_bound # The start time of this function is used at the end to update the timestamp of the last update
-    with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt')) as file: last_update = dateutil.parser.parse(file.read())
+    # This variable is used in the while loop to ensure only notes of a specific timespan are fetched
+    upper_bound = datetime.datetime.now(datetime.timezone.utc)
+    # The start time of this function is used at the end to update the timestamp of the last update
+    update_start_time = upper_bound
+    with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt')) as file:
+        last_update = dateutil.parser.parse(file.read())
 
+    # Estimate a useful limit with a new note action every 15 seconds
     diff = (upper_bound - last_update).total_seconds()
-    useful_limit = math.ceil(diff * (1 / 15)) # Estimate a useful limit with a new note action every 15 seconds
+    useful_limit = math.ceil(diff * (1 / 15))
     useful_limit = min(10000, useful_limit)
 
-    all_stats = [0, 0, 0, 0] # 0. Deleted 1. Added, 2. Updated, 3. Ignored
+    # 0. Deleted 1. Added, 2. Updated, 3. Ignored
+    all_stats = [0, 0, 0, 0]
     all_ignored = False
 
     # Either stop in case the stop date (i.e. the date of the last update) is exceeded or all notes are being ignored when inserting
-    while upper_bound is not None and upper_bound > last_update and all_ignored == False:
+    while upper_bound is not None and upper_bound > last_update and not all_ignored:
         url = build_url({
             'from': last_update.isoformat(),
             'to': upper_bound.isoformat(),
@@ -44,7 +50,9 @@ def update(limit=100):
 
         stats, oldest = insert(features)
         all_stats = [sum(x) for x in zip(all_stats, stats)]
-        all_ignored = stats[3] == len(features) # Check whether all features were ignored, meaning there are no updates anymore
+
+        # Check whether all features were ignored, meaning there are no updates anymore
+        all_ignored = stats[3] == len(features)
         upper_bound = oldest
 
     print(textwrap.dedent(f"""
@@ -63,20 +71,24 @@ def update(limit=100):
     ----------------------------------------
     """))
 
-    with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt'), 'w') as file: file.write(update_start_time.isoformat(timespec='seconds'))
-    #### ---------------- ####
+    with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt'), 'w') as file:
+        file.write(update_start_time.isoformat(timespec='seconds'))
+    # ---------------------------------------- #
+
 
 def build_url(query={}):
     defaults = {
         'sort': 'updated_at',
         'closed': '-1',
         'limit': '100',
-        # The start date needs to be specified because otherwise the value of the 'to-parameter' has no effect
-        'from': dateutil.parser.parse('2013-04-23T00:00:00') # Begin of OpenStreetMap notes
+        # The start date needs to be specified because otherwise the value of the
+        # 'to-parameter' has no effect (Use the begin of OpenStreetMap notes)
+        'from': dateutil.parser.parse('2013-04-23T00:00:00')
     }
     host = 'https://api.openstreetmap.org/api/0.6/notes/search.json'
     url = host + '?' + urllib.parse.urlencode({**defaults, **query})
     return url
+
 
 # Parse the comments and extract only the useful information
 def parse(comments):
@@ -90,6 +102,7 @@ def parse(comments):
         if not comment['text']:
             del comment['text']
     return comments
+
 
 # Loops through the provided list of notes and:
 # - Adds notes if they are unknown
@@ -134,7 +147,8 @@ def insert(features):
         # It also filters dates that differ a lot (the current threshold is at one hour (60 * 60 = 3600))
         # to prevent the issue mentioned above
         last_changed = note['comments'][-1]['date']
-        if oldest is None or (last_changed < oldest and (oldest - last_changed).total_seconds() < (60 * 60)): oldest = last_changed
+        if oldest is None or (last_changed < oldest and (oldest - last_changed).total_seconds() < (60 * 60)):
+            oldest = last_changed
 
         document = collection.find_one(query)
         if document is None:
@@ -166,6 +180,7 @@ def insert(features):
                 'error': result.bulk_api_result['writeErrors']
             })
     return [deleted, inserted, updated, ignored], oldest
+
 
 parser = argparse.ArgumentParser(description='Update notes between the last check and now.')
 parser.add_argument('-l', '--limit', type=int, default=100, help='set the batch size limit (default: 100)')

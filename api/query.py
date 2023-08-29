@@ -26,6 +26,7 @@ class Sort(object):
         self.sort['order'] = 1 if order in ['asc', 'ascending'] else -1
         return self
 
+
 class Filter(object):
     def __init__(self, sort):
         self.filter = {}
@@ -48,8 +49,10 @@ class Filter(object):
             self.filter['coordinates'] = {
                 '$geoWithin': {
                     '$box':  [
-                        [ bbox.x1, bbox.y1 ], # bottom left coordinates (longitude, latitude)
-                        [ bbox.x2, bbox.y2 ] # upper right coordinates (longitude, latitude)
+                        # bottom left coordinates (longitude, latitude)
+                        [bbox.x1, bbox.y1],
+                        # upper right coordinates (longitude, latitude)
+                        [bbox.x2, bbox.y2]
                     ]
                 }
             }
@@ -105,6 +108,7 @@ class Filter(object):
                 '$size': int(amount_of_comments) + 1
             }
         return self
+
 
 class BoundingBox(object):
     def __init__(self, bbox):

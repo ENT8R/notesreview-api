@@ -15,13 +15,13 @@ load_dotenv()
 
 app = Sanic(__name__)
 settings = dict(
-    DEFAULT_LIMIT = 50,
-    MAX_LIMIT = 100,
-    DB_USER = os.environ.get('DB_USER'),
-    DB_PASSWORD = os.environ.get('DB_PASSWORD'),
-    DB_HOST = os.environ.get('DB_HOST'),
-    CORS_ORIGINS = '*',
-    CORS_ALWAYS_SEND = False
+    DEFAULT_LIMIT=50,
+    MAX_LIMIT=100,
+    DB_USER=os.environ.get('DB_USER'),
+    DB_PASSWORD=os.environ.get('DB_PASSWORD'),
+    DB_HOST=os.environ.get('DB_HOST'),
+    CORS_ORIGINS='*',
+    CORS_ALWAYS_SEND=False
 )
 app.config.update(settings)
 
@@ -37,15 +37,18 @@ app.ext.openapi.describe(
     )
 )
 
+
 @app.before_server_start
 async def setup(app, loop):
     client = AsyncIOMotorClient(f'mongodb://{app.config.DB_USER}:{app.config.DB_PASSWORD}@{app.config.DB_HOST}:27017', io_loop=loop)
     app.ctx.client = client
     app.ctx.db = client.notesreview
 
+
 @app.before_server_stop
 async def shutdown(app, loop):
     app.ctx.client.close()
+
 
 @app.get('/api/search')
 @openapi.description('Search and filter all notes in the database')
@@ -75,24 +78,24 @@ async def search(request):
     try:
         sort = Sort().by(request.args.get('sort_by', 'updated_at')).order(request.args.get('order', 'descending')).build()
         filter = (Filter(sort)
-                    .query(request.args.get('query'))
-                    .bbox(request.args.get('bbox'))
-                    .status(request.args.get('status'))
-                    .anonymous(request.args.get('anonymous'))
-                    .author(request.args.get('author'))
-                    .after(request.args.get('after', None))
-                    .before(request.args.get('before', None))
-                    .comments(request.args.get('comments', None))
-                    .build())
+                  .query(request.args.get('query'))
+                  .bbox(request.args.get('bbox'))
+                  .status(request.args.get('status'))
+                  .anonymous(request.args.get('anonymous'))
+                  .author(request.args.get('author'))
+                  .after(request.args.get('after', None))
+                  .before(request.args.get('before', None))
+                  .comments(request.args.get('comments', None))
+                  .build())
     except ValueError as error:
         return json({'error': str(error)}, status=400)
 
-    #----------------------------------------#
+    # ---------------------------------------- #
 
     # Apply the default limit in case the argument could not be parsed (e.g. for limit=NaN)
     try:
         limit = int(request.args.get('limit', app.config.DEFAULT_LIMIT))
-    except ValueError as error:
+    except ValueError:
         limit = app.config.DEFAULT_LIMIT
 
     if limit > app.config.MAX_LIMIT:

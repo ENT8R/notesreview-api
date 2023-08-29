@@ -13,8 +13,12 @@ DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 RUN_IN_BACKGROUND = False
 
 # Apply validation schemes (requires the collection to exist)
-with open(os.path.join(DIRECTORY, '..', 'schema', 'schema.json')) as schema: schema = json.load(schema)
-db.command({ 'collMod': 'notes', 'validator': schema['notesreview.notes'] })
+with open(os.path.join(DIRECTORY, '..', 'schema', 'schema.json')) as schema:
+    schema = json.load(schema)
+db.command({
+    'collMod': 'notes',
+    'validator': schema['notesreview.notes']
+})
 
 # Create indices used for faster queries
 db.notes.create_index([('updated_at', pymongo.DESCENDING)], name='updated_at', background=RUN_IN_BACKGROUND)

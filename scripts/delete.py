@@ -13,6 +13,7 @@ load_dotenv()
 client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
 collection = client.notesreview.notes
 
+
 # Find all ids of the notes which are included in the current notes dump
 def ids(file):
     ids = set()
@@ -27,6 +28,7 @@ def ids(file):
         ids.add(id)
     iteration.fast_iter(tqdm(etree.iterparse(file, tag='note', events=('end',))), process_element)
     return ids, last_id
+
 
 # Delete (or only print the ids of) all notes that are stored in the database but not included in the set of ids
 def delete(ids_in_dump, last_id, delete):
@@ -50,6 +52,7 @@ def delete(ids_in_dump, last_id, delete):
         # Delete all notes that are currently in the database but not in the dump
         result = collection.delete_many({'_id': {'$in': list(ids_in_db)}}, hint='_id_')
         tqdm.write(f'Deleted {result.deleted_count} notes which are not present in the notes dump anymore')
+
 
 parser = argparse.ArgumentParser(description='Delete notes that are not included in the notes dump.')
 parser.add_argument('file', type=str, help='path to the file which contains the notes dump')
