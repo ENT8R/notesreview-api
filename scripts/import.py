@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from pymongo import MongoClient
-from pymongo import DeleteOne, UpdateOne
+from pymongo import UpdateOne
 
 import argparse, datetime, os, textwrap
 
@@ -10,18 +10,23 @@ import dateutil.parser
 from tqdm import tqdm
 from lxml import etree
 
+import iteration
+
 client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
 collection = client.notesreview.notes
 
 # Parses an XML file containing all notes and inserts them into the database
 def insert(file):
-    operations = []
+    # Notes are inserted/updated in batches of 50000
+    BATCH_SIZE = 50000
+
     ids = set()
-    BATCH_SIZE = 50000 # Notes are inserted in batches of 50000
-    i = 0
+    operations = []
     all_stats = [0, 0, 0, 0] # 0. Deleted 1. Added, 2. Updated, 3. Matched
 
-    for event, element in tqdm(etree.iterparse(file, tag='note')):
+    def process_element(element):
+        nonlocal ids, operations, all_stats
+
         try:
             attributes = element.attrib
             id = int(attributes['id'])
@@ -35,35 +40,29 @@ def insert(file):
             }
         except:
             tqdm.write(f'Failed to parse note with the id {id}')
-            continue
+            return
 
+        ids.add(id)
         operations.append(UpdateOne({'_id': id}, {'$set': {
             'status': note['status'],
             'updated_at': note['updated_at'],
             'comments': note['comments']
         }, '$setOnInsert': {
             'coordinates': note['coordinates'],
-        }}, upsert = True))
-        ids.add(id)
-        element.clear()
+        }}, upsert=True, hint='_id_'))
 
-        i += 1
-        if i >= BATCH_SIZE:
+        if len(operations) >= BATCH_SIZE:
             stats = write(operations)
             all_stats = [sum(x) for x in zip(all_stats, stats)]
             operations = []
-            i = 0
+    iteration.fast_iter(tqdm(etree.iterparse(file, tag='note', events=('end',))), process_element)
 
-    # Delete notes that are not present in the notes dump anymore
-    for note in tqdm(collection.find({}, {'_id': True}).hint('_id_')):
-        if note['_id'] not in ids:
-            operations.append(DeleteOne({'_id': note['_id']}))
-
-    if len(operations) != 0:
+    if len(operations) > 0:
         stats = write(operations)
         all_stats = [sum(x) for x in zip(all_stats, stats)]
+        operations = []
 
-    print(textwrap.dedent(f"""
+    tqdm.write(textwrap.dedent(f"""
     ----------------------------------------
     IMPORT SUMMARY
     --------------------
