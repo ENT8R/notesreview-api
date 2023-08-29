@@ -1,14 +1,14 @@
+import argparse
+import os
+
 from dotenv import load_dotenv
-load_dotenv()
-
-from pymongo import MongoClient
-
-import argparse, os
-
-from tqdm import tqdm
 from lxml import etree
+from pymongo import MongoClient
+from tqdm import tqdm
 
-import iteration
+from . import iteration
+
+load_dotenv()
 
 client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
 collection = client.notesreview.notes

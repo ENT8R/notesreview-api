@@ -1,5 +1,7 @@
-import dateutil.parser
 import re
+
+import dateutil.parser
+
 
 class Sort(object):
     def __init__(self):

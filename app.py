@@ -1,18 +1,17 @@
 import os
 from textwrap import dedent
 
+import orjson
 from dotenv import load_dotenv
-load_dotenv()
+from motor.motor_asyncio import AsyncIOMotorClient
+from sanic import Sanic
+from sanic.response import json
+from sanic_ext import openapi
 
 from api.models.note import Note
 from api.query import Filter, Sort
 
-import orjson
-from motor.motor_asyncio import AsyncIOMotorClient
-
-from sanic import Sanic
-from sanic.response import json
-from sanic_ext import openapi
+load_dotenv()
 
 app = Sanic(__name__)
 settings = dict(

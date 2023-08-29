@@ -1,8 +1,11 @@
+import json
+import os
+
+import pymongo
 from dotenv import load_dotenv
+
 load_dotenv()
 
-import json, os
-import pymongo
 client = pymongo.MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@{os.environ.get("DB_HOST")}:27017/')
 db = client.notesreview
 

@@ -1,13 +1,16 @@
-from dotenv import load_dotenv
-load_dotenv()
-
-from pymongo import MongoClient
-from pymongo import InsertOne, DeleteOne, UpdateOne
-
-import argparse, datetime, math, os, sys, textwrap
+import argparse
+import datetime
+import math
+import os
+import textwrap
+import urllib.parse
 
 import dateutil.parser
-import requests, urllib.parse
+import requests
+from dotenv import load_dotenv
+from pymongo import DeleteOne, InsertOne, MongoClient, UpdateOne
+
+load_dotenv()
 
 client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
 collection = client.notesreview.notes
