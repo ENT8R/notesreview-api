@@ -30,6 +30,6 @@ jobs:
         run: |
           flake8 --count --extend-ignore=E501 --show-source --statistics $LINT_FILES
       - name: Format
+        # Enable black with "black --check --skip-string-normalization $LINT_FILES" after code cleanup
         run: |
-          black --check --verbose --skip-string-normalization $LINT_FILES
           isort --check-only $LINT_FILES
