@@ -1,9 +1,9 @@
-lxml==4.9.1
-motor==3.0.0
-orjson==3.8.0
-pymongo==4.2.0
+lxml==4.9.3
+motor==3.3.0
+orjson==3.9.5
+pymongo==4.5.0
 python-dateutil==2.8.2
-python-dotenv==0.21.0
-requests==2.28.1
-sanic[ext]==22.9.0
-tqdm==4.64.1
+python-dotenv==1.0.0
+requests==2.31.0
+sanic[ext]==23.6.0
+tqdm==4.66.1
