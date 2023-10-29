@@ -87,6 +87,11 @@ class Filter(object):
             self.filter['comments.0.user'] = author
         return self
 
+    def user(self, user):
+        if user is not None:
+            self.filter['comments.user'] = user
+        return self
+
     def after(self, after):
         if after is not None:
             if not self.sort[0] in self.filter:
