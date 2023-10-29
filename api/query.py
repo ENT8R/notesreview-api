@@ -114,6 +114,26 @@ class Filter(object):
             }
         return self
 
+    def commented(self, commented):
+        if commented not in [None, 'include', 'hide', 'only']:
+            raise ValueError('Commented must be one of [include, hide, only]')
+
+        if commented is not None:
+            # Filtering out commented notes means that only the original comment exists
+            if commented == 'hide':
+                self.filter['comments'] = {
+                    '$size': 1
+                }
+            # Showing only commented notes requires the amount of comments to be greater than 1
+            # This is not directly allowed (since $size does not accept ranges of values, e.g. via $gt),
+            # so instead show only notes with an amount of comments different from 1
+            # (notes with 0 comments do not exist)
+            if commented == 'only':
+                self.filter['comments'] = {
+                    '$not': { '$size': 1 }
+                }
+        return self
+
 
 class BoundingBox(object):
     def __init__(self, bbox):

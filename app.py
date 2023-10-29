@@ -68,6 +68,7 @@ async def shutdown(app, loop):
 @openapi.parameter('after', openapi.DateTime(description='Only return notes updated or created after this date', default=None, example='2020-03-13T10:20:24'))
 @openapi.parameter('before', openapi.DateTime(description='Only return notes updated or created before this date', default=None, example='2020-05-11T07:10:45'))
 @openapi.parameter('comments', openapi.Integer(description='Filters the amount of comments on a note', minimum=0, default=None))
+@openapi.parameter('commented', openapi.String(description='Whether commented notes should be included inclusively, excluded or included exclusively in the results', enum=('include', 'hide', 'only'), default='include'))
 @openapi.parameter('sort_by', openapi.String(description='Sort notes either by the date of the last update or their creation date', enum=('updated_at', 'created_at'), default='updated_at'))
 @openapi.parameter('order', openapi.String(description='Sort notes either in ascending or descending order', enum=('descending', 'desc', 'ascending', 'asc'), default='descending'))
 @openapi.parameter('limit', openapi.Integer(description='Limit the amount of notes to return', minimum=1, maximum=app.config.MAX_LIMIT, default=app.config.DEFAULT_LIMIT))
@@ -88,6 +89,7 @@ async def search(request):
                   .after(request.args.get('after', None))
                   .before(request.args.get('before', None))
                   .comments(request.args.get('comments', None))
+                  .commented(request.args.get('commented'))
                   .build())
     except ValueError as error:
         return json({'error': str(error)}, status=400)
