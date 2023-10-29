@@ -60,7 +60,8 @@ async def shutdown(app, loop):
     Spaces and other delimiters like dots are currently treated as a logical OR,
     though this will likely change in the future.
     """), default=None, required=False))
-@openapi.parameter('bbox', openapi.String(description='A pair of coordinates specifying a rectangular box where all results are located in.', example='-87.6955,41.8353,-87.5871,41.9170', default=None))
+@openapi.parameter('bbox', openapi.String(description='A pair of coordinates specifying a rectangular box where all results are located in', example='-87.6955,41.8353,-87.5871,41.9170', default=None))
+@openapi.parameter('polygon', openapi.String(description='A GeoJSON polygon specifying a region where all results are located in', default=None))
 @openapi.parameter('status', openapi.String(description='The current status of the note', enum=('all', 'open', 'closed'), default='all'))
 @openapi.parameter('anonymous', openapi.String(description='Whether anonymous notes should be included inclusively, excluded or included exclusively in the results', enum=('include', 'hide', 'only'), default='include'))
 @openapi.parameter('author', openapi.String(description='Name of the user who opened the note', default=None))
@@ -82,6 +83,7 @@ async def search(request):
         filter = (Filter(sort)
                   .query(request.args.get('query'))
                   .bbox(request.args.get('bbox'))
+                  .polygon(request.args.get('polygon'))
                   .status(request.args.get('status'))
                   .anonymous(request.args.get('anonymous'))
                   .author(request.args.get('author'))

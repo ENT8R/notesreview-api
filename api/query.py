@@ -1,6 +1,7 @@
 import re
 
 import dateutil.parser
+import orjson
 
 
 class Sort(object):
@@ -54,6 +55,19 @@ class Filter(object):
                         # upper right coordinates (longitude, latitude)
                         [bbox.x2, bbox.y2]
                     ]
+                }
+            }
+        return self
+
+    def polygon(self, polygon):
+        if polygon is not None:
+            polygon = Polygon(polygon)
+            self.filter['coordinates'] = {
+                '$geoWithin': {
+                    '$geometry': {
+                        'type': polygon.type,
+                        'coordinates': polygon.coordinates
+                    }
                 }
             }
         return self
@@ -154,3 +168,19 @@ class BoundingBox(object):
             raise ValueError('The minimum latitude must be smaller than the maximum latitude')
         if self.x1 < -180 or self.y1 < -90 or self.x2 > +180 or self.y2 > +90:
             raise ValueError('The bounding box exceeds the size of the world, please specify a smaller bounding box')
+
+class Polygon(object):
+    def __init__(self, polygon):
+        polygon = orjson.loads(polygon)
+        if 'type' not in polygon or 'coordinates' not in polygon:
+            raise ValueError('Polygon does not contain information about type or any coordinates')
+
+        self.type = polygon['type']
+        self.coordinates = polygon['coordinates']
+        self.check()
+
+    def check(self):
+        if self.type not in ['Polygon', 'MultiPolygon']:
+            raise ValueError('The GeoJSON shape must be either a Polygon or a MultiPolygon')
+        if type(self.coordinates) is not list:
+            raise ValueError('Coordinates have to be supplied as an array')
