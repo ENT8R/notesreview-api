@@ -8,8 +8,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.x"]
-    env:
-      LINT_FILES: "app.py api/ scripts/"
 
     steps:
       - uses: actions/checkout@v3
@@ -28,8 +26,7 @@ jobs:
 
       - name: Lint
         run: |
-          flake8 --count --extend-ignore=E501 --show-source --statistics $LINT_FILES
+          make lint
       - name: Format
-        # Enable black with "black --check --skip-string-normalization $LINT_FILES" after code cleanup
         run: |
-          isort --check-only $LINT_FILES
+          make format
