@@ -1,6 +1,8 @@
 import re
+import os
 
 import dateutil.parser
+import lark
 import orjson
 
 
@@ -32,6 +34,7 @@ class Filter(object):
     def __init__(self, sort):
         self.filter = {}
         self.sort = sort
+        self.users = Users()
 
     def build(self):
         return self.filter
@@ -98,12 +101,26 @@ class Filter(object):
 
     def author(self, author):
         if author is not None:
-            self.filter['comments.0.user'] = author
+            include, exclude = self.users.parse(author)
+            if not 'comments.0.user' in self.filter:
+                self.filter['comments.0.user'] = {}
+            self.filter['comments.0.user'].update(
+                self.clean({
+                    '$in': include,
+                    '$nin': exclude
+                }))
         return self
 
     def user(self, user):
         if user is not None:
-            self.filter['comments.user'] = user
+            include, exclude = self.users.parse(user)
+            if not 'comments.user' in self.filter:
+                self.filter['comments.user'] = {}
+            self.filter['comments.user'].update(
+                self.clean({
+                    '$all': include,
+                    '$nin': exclude
+                }))
         return self
 
     def after(self, after):
@@ -148,6 +165,10 @@ class Filter(object):
                 }
         return self
 
+    # Remove values that are not defined or empty from a given dictionary
+    def clean(self, dictionary):
+        return {k: v for k, v in dictionary.items() if v is not None and (type(v) is list and len(v) > 0)}
+
 
 class BoundingBox(object):
     def __init__(self, bbox):
@@ -184,3 +205,25 @@ class Polygon(object):
             raise ValueError('The GeoJSON shape must be either a Polygon or a MultiPolygon')
         if type(self.coordinates) is not list:
             raise ValueError('Coordinates have to be supplied as an array')
+
+
+class Users(object):
+    def __init__(self):
+        with open(os.path.join(os.path.dirname(__file__), 'grammars', 'users.lark')) as file:
+            self.grammar = lark.Lark(file.read())
+
+    def parse(self, input):
+        tree = self.grammar.parse(input)
+        include = []
+        exclude = []
+
+        for node in tree.children:
+            if isinstance(node.children[0], lark.Token):
+                include.append(node.children[0].value)
+            elif isinstance(node.children[0], lark.Tree) and node.children[0].data == 'not':
+                exclude.append(node.children[0].children[0].value)
+
+        if len(include) + len(exclude) > 10:
+            raise ValueError('The amount of users to search for exceeds the limit')
+
+        return include, exclude

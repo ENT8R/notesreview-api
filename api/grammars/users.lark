@@ -1,0 +1,15 @@
+start: exp (_sep " "? exp)*
+
+exp: not | user
+not: ("NOT " | "-") user
+?user: "\""? name "\""?
+
+_sep: "," | ";"
+?name: WORD+
+
+// Allow any characters except invalid ranges as defined in
+// https://github.com/openstreetmap/openstreetmap-website/blob/9aa3e7a/app/validators/characters_validator.rb#L2-L3
+// by using negative lookaheads (https://stackoverflow.com/questions/1687620/regex-match-everything-but-a-specific-pattern)
+//
+// Additionally " is not allowed as well
+WORD: /(?![\x00-\x08\x0b-\x0c\x0e-\x1f\x7f\ufffe\uffff\/;\.,\?%#\"])./+
