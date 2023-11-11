@@ -50,6 +50,7 @@ async def setup(app, loop):
 async def shutdown(app, loop):
     app.ctx.client.close()
 
+
 class Search(HTTPMethodView):
     @openapi.description('Search and filter all notes in the database')
     @openapi.parameter('query', openapi.String(description=dedent(
@@ -96,18 +97,18 @@ class Search(HTTPMethodView):
     def parse(self, data):
         sort = Sort().by(data.get('sort_by', 'updated_at')).order(data.get('order', 'descending')).build()
         filter = (Filter(sort)
-                .query(data.get('query'))
-                .bbox(data.get('bbox'))
-                .polygon(data.get('polygon'))
-                .status(data.get('status'))
-                .anonymous(data.get('anonymous'))
-                .author(data.get('author'))
-                .user(data.get('user'))
-                .after(data.get('after', None))
-                .before(data.get('before', None))
-                .comments(data.get('comments', None))
-                .commented(data.get('commented'))
-                .build())
+                  .query(data.get('query'))
+                  .bbox(data.get('bbox'))
+                  .polygon(data.get('polygon'))
+                  .status(data.get('status'))
+                  .anonymous(data.get('anonymous'))
+                  .author(data.get('author'))
+                  .user(data.get('user'))
+                  .after(data.get('after', None))
+                  .before(data.get('before', None))
+                  .comments(data.get('comments', None))
+                  .commented(data.get('commented'))
+                  .build())
         limit = data.get('limit', app.config.DEFAULT_LIMIT)
 
         return sort, filter, limit
@@ -131,5 +132,6 @@ class Search(HTTPMethodView):
         async for document in cursor:
             result.append(document)
         return json(result, dumps=orjson.dumps, option=orjson.OPT_NAIVE_UTC)
+
 
 app.add_route(Search.as_view(), '/api/search')

@@ -1,5 +1,5 @@
-import re
 import os
+import re
 
 import dateutil.parser
 import lark
@@ -102,7 +102,7 @@ class Filter(object):
     def author(self, author):
         if author is not None:
             include, exclude = self.users.parse(author)
-            if not 'comments.0.user' in self.filter:
+            if 'comments.0.user' not in self.filter:
                 self.filter['comments.0.user'] = {}
             self.filter['comments.0.user'].update(
                 self.clean({
@@ -114,7 +114,7 @@ class Filter(object):
     def user(self, user):
         if user is not None:
             include, exclude = self.users.parse(user)
-            if not 'comments.user' in self.filter:
+            if 'comments.user' not in self.filter:
                 self.filter['comments.user'] = {}
             self.filter['comments.user'].update(
                 self.clean({
@@ -125,14 +125,14 @@ class Filter(object):
 
     def after(self, after):
         if after is not None:
-            if not self.sort[0] in self.filter:
+            if self.sort[0] not in self.filter:
                 self.filter[self.sort[0]] = {}
             self.filter[self.sort[0]]['$gt'] = dateutil.parser.parse(after)
         return self
 
     def before(self, before):
         if before is not None:
-            if not self.sort[0] in self.filter:
+            if self.sort[0] not in self.filter:
                 self.filter[self.sort[0]] = {}
             self.filter[self.sort[0]]['$lt'] = dateutil.parser.parse(before)
         return self
@@ -161,7 +161,9 @@ class Filter(object):
             # (notes with 0 comments do not exist)
             if commented == 'only':
                 self.filter['comments'] = {
-                    '$not': { '$size': 1 }
+                    '$not': {
+                        '$size': 1
+                    }
                 }
         return self
 
@@ -189,6 +191,7 @@ class BoundingBox(object):
             raise ValueError('The minimum latitude must be smaller than the maximum latitude')
         if self.x1 < -180 or self.y1 < -90 or self.x2 > +180 or self.y2 > +90:
             raise ValueError('The bounding box exceeds the size of the world, please specify a smaller bounding box')
+
 
 class Polygon(object):
     def __init__(self, polygon):
