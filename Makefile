@@ -1,7 +1,10 @@
 LINT_FILES = app.py api/ scripts/
 
 install:
-	pip install -r requirements.txt  
+	pip install -r requirements.txt
+
+install-dev:
+	pip install -r requirements.dev.txt
 
 lint:
 	flake8 --count --extend-ignore=E501 --show-source --statistics $(LINT_FILES)
