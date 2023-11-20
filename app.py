@@ -88,7 +88,7 @@ class Search(HTTPMethodView):
 
     async def post(self, request):
         try:
-            sort, filter, limit = self.parse(request.form)
+            sort, filter, limit = self.parse(request.json)
         except ValueError as error:
             return json({'error': str(error)}, status=400)
 
