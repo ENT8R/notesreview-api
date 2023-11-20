@@ -12,7 +12,7 @@ from pymongo import DeleteOne, InsertOne, MongoClient, UpdateOne
 
 load_dotenv()
 
-client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
+client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/', tz_aware=True)
 collection = client.notesreview.notes
 
 DIRECTORY = os.path.dirname(os.path.realpath(__file__))
@@ -156,7 +156,9 @@ def insert(features):
             operations.append(InsertOne(note))
             inserted += 1
         else:
-            # Note is already in the database
+            # Note is already stored in the database, the statement is only true if
+            # "both dictionaries have the same (key, value) pairs (regardless of ordering)"
+            # See https://docs.python.org/3/library/stdtypes.html#dict
             if note == document:
                 # Note is the same as the one that is already saved, should be ignored
                 ignored += 1
