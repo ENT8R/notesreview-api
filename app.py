@@ -17,7 +17,7 @@ load_dotenv()
 app = Sanic(__name__)
 settings = dict(
     DEFAULT_LIMIT=50,
-    MAX_LIMIT=100,
+    MAX_LIMIT=250,
     DB_USER=os.environ.get('DB_USER'),
     DB_PASSWORD=os.environ.get('DB_PASSWORD'),
     DB_HOST=os.environ.get('DB_HOST'),
