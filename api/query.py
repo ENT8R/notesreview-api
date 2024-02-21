@@ -11,14 +11,19 @@ class Sort(object):
         self.sort = {}
 
     def build(self):
-        return self.sort['by'], self.sort['order']
+        return self.sort.get('by'), self.sort.get('order')
 
     def by(self, by):
-        allowed = ['updated_at', 'created_at']
+        allowed = ['none', 'updated_at', 'created_at']
         if by not in allowed:
             raise ValueError(f'Sort must be one of {allowed}')
 
-        self.sort['by'] = 'comments.0.date' if by == 'created_at' else 'updated_at'
+        if by == 'none':
+            pass
+        elif by == 'updated_at':
+            self.sort['by'] = 'updated_at'
+        elif by == 'created_at':
+            self.sort['by'] = 'comments.0.date'
         return self
 
     def order(self, order):
@@ -26,7 +31,10 @@ class Sort(object):
         if order not in allowed:
             raise ValueError(f'Order must be one of {allowed}')
 
-        self.sort['order'] = 1 if order in ['asc', 'ascending'] else -1
+        if order in ['asc', 'ascending']:
+            self.sort['order'] = 1
+        elif order in ['desc', 'descending']:
+            self.sort['order'] = -1
         return self
 
 
@@ -125,16 +133,26 @@ class Filter(object):
 
     def after(self, after):
         if after is not None:
-            if self.sort[0] not in self.filter:
-                self.filter[self.sort[0]] = {}
-            self.filter[self.sort[0]]['$gt'] = dateutil.parser.parse(after)
+            key = self.sort[0]
+            # If results will be unsorted, use the creation date for the comparison
+            if key is None:
+                key = 'comments.0.date'
+
+            if key not in self.filter:
+                self.filter[key] = {}
+            self.filter[key]['$gt'] = dateutil.parser.parse(after)
         return self
 
     def before(self, before):
         if before is not None:
-            if self.sort[0] not in self.filter:
-                self.filter[self.sort[0]] = {}
-            self.filter[self.sort[0]]['$lt'] = dateutil.parser.parse(before)
+            key = self.sort[0]
+            # If results will be unsorted, use the creation date for the comparison
+            if key is None:
+                key = 'comments.0.date'
+
+            if key not in self.filter:
+                self.filter[key] = {}
+            self.filter[key]['$lt'] = dateutil.parser.parse(before)
         return self
 
     def comments(self, amount_of_comments):

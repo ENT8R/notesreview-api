@@ -71,7 +71,7 @@ class Search(HTTPMethodView):
     @openapi.parameter('before', openapi.DateTime(description='Only return notes updated or created before this date', default=None, example='2020-05-11T07:10:45'))
     @openapi.parameter('comments', openapi.Integer(description='Filters the amount of comments on a note', minimum=0, default=None))
     @openapi.parameter('commented', openapi.String(description='Whether commented notes should be included inclusively, excluded or included exclusively in the results', enum=('include', 'hide', 'only'), default='include'))
-    @openapi.parameter('sort_by', openapi.String(description='Sort notes either by the date of the last update or their creation date', enum=('updated_at', 'created_at'), default='updated_at'))
+    @openapi.parameter('sort_by', openapi.String(description='Sort notes either by no criteria, the date of the last update or their creation date', enum=('none', 'updated_at', 'created_at'), default='updated_at'))
     @openapi.parameter('order', openapi.String(description='Sort notes either in ascending or descending order', enum=('descending', 'desc', 'ascending', 'asc'), default='descending'))
     @openapi.parameter('limit', openapi.Integer(description='Limit the amount of notes to return', minimum=1, maximum=app.config.MAX_LIMIT, default=app.config.DEFAULT_LIMIT))
     @openapi.response(200, openapi.Array(items=Note, uniqueItems=True), 'The response is an array containing the notes with the requested information')
@@ -127,7 +127,11 @@ class Search(HTTPMethodView):
         if limit == 0:
             limit = app.config.DEFAULT_LIMIT
 
-        cursor = app.ctx.db.notes.find(filter).limit(limit).sort(*sort)
+        cursor = app.ctx.db.notes.find(filter).limit(limit)
+        # Queries are faster if the sorting is not explicitly specified (if desired)
+        if sort[0] is not None:
+            cursor = cursor.sort(*sort)
+
         result = []
         async for document in cursor:
             result.append(document)
