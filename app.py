@@ -41,7 +41,7 @@ app.ext.openapi.describe(
 
 @app.before_server_start
 async def setup(app, loop):
-    client = AsyncIOMotorClient(f'mongodb://{app.config.DB_USER}:{app.config.DB_PASSWORD}@{app.config.DB_HOST}:27017', io_loop=loop)
+    client = AsyncIOMotorClient(f'mongodb://{app.config.DB_USER}:{app.config.DB_PASSWORD}@{app.config.DB_HOST}:27017?authSource=notesreview', io_loop=loop)
     app.ctx.client = client
     app.ctx.db = client.notesreview
 

@@ -12,7 +12,7 @@ from pymongo import DeleteOne, InsertOne, MongoClient, UpdateOne
 
 load_dotenv()
 
-client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/', tz_aware=True)
+client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/?authSource=notesreview', tz_aware=True)
 collection = client.notesreview.notes
 
 DIRECTORY = os.path.dirname(os.path.realpath(__file__))

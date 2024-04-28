@@ -13,7 +13,7 @@ from . import iteration
 
 load_dotenv()
 
-client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/')
+client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/?authSource=notesreview')
 collection = client.notesreview.notes
 
 
