@@ -12,7 +12,10 @@ from pymongo import DeleteOne, InsertOne, MongoClient, UpdateOne
 
 load_dotenv()
 
-client = MongoClient(f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/?authSource=notesreview', tz_aware=True)
+client = MongoClient(
+    f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/?authSource=notesreview',
+    tz_aware=True,
+)
 collection = client.notesreview.notes
 
 DIRECTORY = os.path.dirname(os.path.realpath(__file__))
@@ -39,12 +42,18 @@ def update(limit=100):
     all_ignored = False
 
     # Either stop in case the stop date (i.e. the date of the last update) is exceeded or all notes are being ignored when inserting
-    while upper_bound is not None and upper_bound > last_update and not all_ignored:
-        url = build_url({
-            'from': last_update.isoformat(),
-            'to': upper_bound.isoformat(),
-            'limit': str(limit)
-        })
+    while (
+        upper_bound is not None
+        and upper_bound > last_update
+        and not all_ignored
+    ):
+        url = build_url(
+            {
+                'from': last_update.isoformat(),
+                'to': upper_bound.isoformat(),
+                'limit': str(limit),
+            }
+        )
         response = requests.get(url).json()
         features = response['features']
 
@@ -55,21 +64,25 @@ def update(limit=100):
         all_ignored = stats[3] == len(features)
         upper_bound = oldest
 
-    print(textwrap.dedent(f"""
-    ----------------------------------------
-    UPDATE SUMMARY
-    --------------------
-    Last update:    {last_update.isoformat(timespec='seconds')}
-    End of update:  {update_start_time.isoformat(timespec='seconds')}
-    Time in seconds since last update: {round(diff)}
-    Expected a useful limit of {useful_limit} while {all_stats[0] + all_stats[1] + all_stats[2]} was actually needed
-    --------------------
-    Deleted {all_stats[0]} notes
-    Added {all_stats[1]} new notes
-    Updated {all_stats[2]} already existing notes
-    Ignored {all_stats[3]} already existing notes
-    ----------------------------------------
-    """))
+    print(
+        textwrap.dedent(
+            f"""
+            ----------------------------------------
+            UPDATE SUMMARY
+            --------------------
+            Last update:    {last_update.isoformat(timespec='seconds')}
+            End of update:  {update_start_time.isoformat(timespec='seconds')}
+            Time in seconds since last update: {round(diff)}
+            Expected a useful limit of {useful_limit} while {all_stats[0] + all_stats[1] + all_stats[2]} was actually needed
+            --------------------
+            Deleted {all_stats[0]} notes
+            Added {all_stats[1]} new notes
+            Updated {all_stats[2]} already existing notes
+            Ignored {all_stats[3]} already existing notes
+            ----------------------------------------
+            """
+        )
+    )
 
     with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt'), 'w') as file:
         file.write(update_start_time.isoformat(timespec='seconds'))
@@ -83,7 +96,7 @@ def build_url(query={}):
         'limit': '100',
         # The start date needs to be specified because otherwise the value of the
         # 'to-parameter' has no effect (Use the begin of OpenStreetMap notes)
-        'from': dateutil.parser.parse('2013-04-23T00:00:00')
+        'from': dateutil.parser.parse('2013-04-23T00:00:00'),
     }
     host = 'https://api.openstreetmap.org/api/0.6/notes/search.json'
     url = host + '?' + urllib.parse.urlencode({**defaults, **query})
@@ -123,7 +136,7 @@ def insert(features):
             'coordinates': feature['geometry']['coordinates'],
             'status': feature['properties']['status'],
             'updated_at': None if len(comments) == 0 else comments[-1]['date'],
-            'comments': comments
+            'comments': comments,
         }
         query = {'_id': note['_id']}
 
@@ -147,7 +160,10 @@ def insert(features):
         # It also filters dates that differ a lot (the current threshold is at one hour (60 * 60 = 3600))
         # to prevent the issue mentioned above
         last_changed = note['comments'][-1]['date']
-        if oldest is None or (last_changed < oldest and (oldest - last_changed).total_seconds() < (60 * 60)):
+        if oldest is None or (
+            last_changed < oldest
+            and (oldest - last_changed).total_seconds() < (60 * 60)
+        ):
             oldest = last_changed
 
         document = collection.find_one(query)
@@ -166,26 +182,43 @@ def insert(features):
                 # Note is different to the one that is already saved, needs to be updated
                 # This may happen quite often as the notes dump seems to contain comments that are actually hidden
                 # So after the initial import, a difference in the comments attached to a note may be detected
-                operations.append(UpdateOne(query, {'$set': {
-                    'status': note['status'],
-                    'updated_at': note['updated_at'],
-                    'comments': note['comments']
-                }}))
+                operations.append(
+                    UpdateOne(
+                        query,
+                        {
+                            '$set': {
+                                'status': note['status'],
+                                'updated_at': note['updated_at'],
+                                'comments': note['comments'],
+                            }
+                        },
+                    )
+                )
                 updated += 1
 
     if len(operations) != 0:
         result = collection.bulk_write(operations, ordered=False)
         if result.bulk_api_result['writeErrors']:
-            client.events.errors.insert_one({
-                'type': 'update_error',
-                'timestamp': datetime.datetime.now(datetime.timezone.utc),
-                'error': result.bulk_api_result['writeErrors']
-            })
+            client.events.errors.insert_one(
+                {
+                    'type': 'update_error',
+                    'timestamp': datetime.datetime.now(datetime.timezone.utc),
+                    'error': result.bulk_api_result['writeErrors'],
+                }
+            )
     return [deleted, inserted, updated, ignored], oldest
 
 
-parser = argparse.ArgumentParser(description='Update notes between the last check and now.')
-parser.add_argument('-l', '--limit', type=int, default=100, help='set the batch size limit (default: 100)')
+parser = argparse.ArgumentParser(
+    description='Update notes between the last check and now.'
+)
+parser.add_argument(
+    '-l',
+    '--limit',
+    type=int,
+    default=100,
+    help='set the batch size limit (default: 100)',
+)
 args = parser.parse_args()
 
 update(args.limit)

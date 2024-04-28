@@ -50,8 +50,12 @@ class Filter(object):
     def query(self, query):
         if query is not None:
             self.filter['comments.0.text'] = {
-                '$regex': query[len('regex:'):] if query.startswith('regex:') else re.escape(query),
-                '$options': 'i'
+                '$regex': (
+                    query.removeprefix('regex:')
+                    if query.startswith('regex:')
+                    else re.escape(query)
+                ),
+                '$options': 'i',
             }
         return self
 
@@ -60,11 +64,11 @@ class Filter(object):
             bbox = BoundingBox(bbox)
             self.filter['coordinates'] = {
                 '$geoWithin': {
-                    '$box':  [
+                    '$box': [
                         # bottom left coordinates (longitude, latitude)
                         [bbox.x1, bbox.y1],
                         # upper right coordinates (longitude, latitude)
-                        [bbox.x2, bbox.y2]
+                        [bbox.x2, bbox.y2],
                     ]
                 }
             }
@@ -77,7 +81,7 @@ class Filter(object):
                 '$geoWithin': {
                     '$geometry': {
                         'type': polygon.type,
-                        'coordinates': polygon.coordinates
+                        'coordinates': polygon.coordinates,
                     }
                 }
             }
@@ -98,13 +102,9 @@ class Filter(object):
         if anonymous is not None:
             # Filtering out anonymous notes means that there must be a user who created the note
             if anonymous == 'hide':
-                self.filter['comments.0.user'] = {
-                    '$exists': True
-                }
+                self.filter['comments.0.user'] = {'$exists': True}
             if anonymous == 'only':
-                self.filter['comments.0.user'] = {
-                    '$exists': False
-                }
+                self.filter['comments.0.user'] = {'$exists': False}
         return self
 
     def author(self, author):
@@ -113,10 +113,8 @@ class Filter(object):
             if 'comments.0.user' not in self.filter:
                 self.filter['comments.0.user'] = {}
             self.filter['comments.0.user'].update(
-                self.clean({
-                    '$in': include,
-                    '$nin': exclude
-                }))
+                self.clean({'$in': include, '$nin': exclude})
+            )
         return self
 
     def user(self, user):
@@ -125,10 +123,8 @@ class Filter(object):
             if 'comments.user' not in self.filter:
                 self.filter['comments.user'] = {}
             self.filter['comments.user'].update(
-                self.clean({
-                    '$all': include,
-                    '$nin': exclude
-                }))
+                self.clean({'$all': include, '$nin': exclude})
+            )
         return self
 
     def after(self, after):
@@ -158,9 +154,7 @@ class Filter(object):
     def comments(self, amount_of_comments):
         if amount_of_comments is not None:
             # A comment of the note counts as everything after the original comment
-            self.filter['comments'] = {
-                '$size': int(amount_of_comments) + 1
-            }
+            self.filter['comments'] = {'$size': int(amount_of_comments) + 1}
         return self
 
     def commented(self, commented):
@@ -170,31 +164,31 @@ class Filter(object):
         if commented is not None:
             # Filtering out commented notes means that only the original comment exists
             if commented == 'hide':
-                self.filter['comments'] = {
-                    '$size': 1
-                }
+                self.filter['comments'] = {'$size': 1}
             # Showing only commented notes requires the amount of comments to be greater than 1
             # This is not directly allowed (since $size does not accept ranges of values, e.g. via $gt),
             # so instead show only notes with an amount of comments different from 1
             # (notes with 0 comments do not exist)
             if commented == 'only':
-                self.filter['comments'] = {
-                    '$not': {
-                        '$size': 1
-                    }
-                }
+                self.filter['comments'] = {'$not': {'$size': 1}}
         return self
 
     # Remove values that are not defined or empty from a given dictionary
     def clean(self, dictionary):
-        return {k: v for k, v in dictionary.items() if v is not None and (type(v) is list and len(v) > 0)}
+        return {
+            k: v
+            for k, v in dictionary.items()
+            if v is not None and (type(v) is list and len(v) > 0)
+        }
 
 
 class BoundingBox(object):
     def __init__(self, bbox):
         bbox = [float(x) for x in bbox.split(',')]
         if len(bbox) != 4:
-            raise ValueError('The bounding box does not contain all required coordinates')
+            raise ValueError(
+                'The bounding box does not contain all required coordinates'
+            )
 
         self.x1 = bbox[0]
         self.y1 = bbox[1]
@@ -204,18 +198,26 @@ class BoundingBox(object):
 
     def check(self):
         if self.x1 > self.x2:
-            raise ValueError('The minimum longitude must be smaller than the maximum longitude')
+            raise ValueError(
+                'The minimum longitude must be smaller than the maximum longitude'
+            )
         if self.y1 > self.y2:
-            raise ValueError('The minimum latitude must be smaller than the maximum latitude')
+            raise ValueError(
+                'The minimum latitude must be smaller than the maximum latitude'
+            )
         if self.x1 < -180 or self.y1 < -90 or self.x2 > +180 or self.y2 > +90:
-            raise ValueError('The bounding box exceeds the size of the world, please specify a smaller bounding box')
+            raise ValueError(
+                'The bounding box exceeds the size of the world, please specify a smaller bounding box'
+            )
 
 
 class Polygon(object):
     def __init__(self, polygon):
         polygon = orjson.loads(polygon)
         if 'type' not in polygon or 'coordinates' not in polygon:
-            raise ValueError('Polygon does not contain information about type or any coordinates')
+            raise ValueError(
+                'Polygon does not contain information about type or any coordinates'
+            )
 
         self.type = polygon['type']
         self.coordinates = polygon['coordinates']
@@ -223,14 +225,18 @@ class Polygon(object):
 
     def check(self):
         if self.type not in ['Polygon', 'MultiPolygon']:
-            raise ValueError('The GeoJSON shape must be either a Polygon or a MultiPolygon')
+            raise ValueError(
+                'The GeoJSON shape must be either a Polygon or a MultiPolygon'
+            )
         if type(self.coordinates) is not list:
             raise ValueError('Coordinates have to be supplied as an array')
 
 
 class Users(object):
     def __init__(self):
-        with open(os.path.join(os.path.dirname(__file__), 'grammars', 'users.lark')) as file:
+        with open(
+            os.path.join(os.path.dirname(__file__), 'grammars', 'users.lark')
+        ) as file:
             self.grammar = lark.Lark(file.read())
 
     def parse(self, input):
@@ -241,10 +247,15 @@ class Users(object):
         for node in tree.children:
             if isinstance(node.children[0], lark.Token):
                 include.append(node.children[0].value)
-            elif isinstance(node.children[0], lark.Tree) and node.children[0].data == 'not':
+            elif (
+                isinstance(node.children[0], lark.Tree)
+                and node.children[0].data == 'not'
+            ):
                 exclude.append(node.children[0].children[0].value)
 
         if len(include) + len(exclude) > 10:
-            raise ValueError('The amount of users to search for exceeds the limit')
+            raise ValueError(
+                'The amount of users to search for exceeds the limit'
+            )
 
         return include, exclude
