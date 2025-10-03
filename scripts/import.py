@@ -13,7 +13,8 @@ from tqdm import tqdm
 load_dotenv()
 
 client = MongoClient(
-    f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/?authSource=notesreview'
+    f'mongodb://{os.environ.get("DB_USER")}:{os.environ.get("DB_PASSWORD")}@127.0.0.1:27017/?authSource=notesreview',
+    tz_aware=True,
 )
 collection = client.notesreview.notes
 
