@@ -1,12 +1,11 @@
 import argparse
 import os
 
+import iteration
 from dotenv import load_dotenv
 from lxml import etree
 from pymongo import MongoClient
 from tqdm import tqdm
-
-from . import iteration
 
 load_dotenv()
 
@@ -15,6 +14,8 @@ client = MongoClient(
 )
 collection = client.notesreview.notes
 
+DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+
 
 # Find all ids of the notes which are included in the current notes dump
 def ids(file):
@@ -22,7 +23,7 @@ def ids(file):
     last_id = 0
 
     def process_element(element):
-        nonlocal ids, last_id
+        nonlocal last_id
 
         attributes = element.attrib
         id = int(attributes['id'])
@@ -68,6 +69,11 @@ def delete(ids_in_dump, last_id, delete):
         tqdm.write(
             f'Deleted {result.deleted_count} notes which are not present in the notes dump anymore'
         )
+        # Use the creation date of the last note in the dump as the timestamp of the last synchronization
+        last_note = collection.find_one({'_id': last_id})
+        last_date = last_note['comments'][0]['date']
+        with open(os.path.join(DIRECTORY, 'LAST_SYNC.txt'), 'w') as file:
+            file.write(last_date.isoformat(timespec='seconds'))
 
 
 parser = argparse.ArgumentParser(

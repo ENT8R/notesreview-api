@@ -4,12 +4,11 @@ import os
 import textwrap
 
 import dateutil.parser
+import iteration
 from dotenv import load_dotenv
 from lxml import etree
 from pymongo import MongoClient, UpdateOne
 from tqdm import tqdm
-
-from . import iteration
 
 load_dotenv()
 
@@ -18,23 +17,26 @@ client = MongoClient(
 )
 collection = client.notesreview.notes
 
+DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+
 
 # Parses an XML file containing all notes and inserts them into the database
 def insert(file):
     # Notes are inserted/updated in batches of 50000
     BATCH_SIZE = 50000
 
-    ids = set()
     operations = []
     # 0. Deleted 1. Added, 2. Updated, 3. Matched
     all_stats = [0, 0, 0, 0]
+    last_id = 0
 
     def process_element(element):
-        nonlocal ids, operations, all_stats
+        nonlocal operations, all_stats, last_id
 
         try:
             attributes = element.attrib
             id = int(attributes['id'])
+            last_id = id
             comments = parse(element)
             note = {
                 '_id': id,
@@ -50,7 +52,6 @@ def insert(file):
             tqdm.write(f'Failed to parse note with the id {id}')
             return
 
-        ids.add(id)
         operations.append(
             UpdateOne(
                 {'_id': id},
@@ -84,6 +85,11 @@ def insert(file):
         all_stats = [sum(x) for x in zip(all_stats, stats)]
         operations = []
 
+    # Use the creation date of the last note in the dump as the timestamp of the last import
+    last_date = collection.find_one({'_id': last_id})['comments'][0]['date']
+    with open(os.path.join(DIRECTORY, 'LAST_IMPORT.txt'), 'w') as file:
+        file.write(last_date.isoformat(timespec='seconds'))
+
     tqdm.write(
         textwrap.dedent(
             f"""
@@ -95,6 +101,8 @@ def insert(file):
             Updated {all_stats[2]} already existing notes
             Matched {all_stats[3]} notes
             ----------------------------------------
+            Please make sure to run the update script at least until {last_date.isoformat(timespec='seconds')}
+            to import all changes between the creation of the notes dump and now.
             """
         )
     )

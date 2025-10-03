@@ -42,7 +42,7 @@ python scripts/update.py
 # (hosted on https://planet.openstreetmap.org/ or any other mirror)
 
 # ${URL} needs to be replaced with the location of the notes dump
-curl -o notes.osn.bz2 ${URL} && bzip2 -d notes.osn.bz2
+curl -L -o notes.osn.bz2 ${URL} && pbzip2 -d notes.osn.bz2
 ```
 
 ##### XML Structure

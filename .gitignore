@@ -4,4 +4,4 @@ venv/
 __pycache__/
 __init__.py
 
-scripts/LAST_UPDATE.txt
+scripts/*.txt
