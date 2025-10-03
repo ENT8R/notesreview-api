@@ -151,21 +151,6 @@ def insert(features):
             deleted += 1
             continue
 
-        # TODO: This method of receiving the last updated note is not working reliable
-        # as moderators might delete a comment which is just hidden to the users,
-        # but still exists in the database so the API call to return the last updated notes
-        # also includes these versions where some comments are missing
-
-        # Try to find the oldest note based on the last update (this is needed for the next API request)
-        # It also filters dates that differ a lot (the current threshold is at one hour (60 * 60 = 3600))
-        # to prevent the issue mentioned above
-        last_changed = note['comments'][-1]['date']
-        if oldest is None or (
-            last_changed < oldest
-            and (oldest - last_changed).total_seconds() < (60 * 60)
-        ):
-            oldest = last_changed
-
         document = collection.find_one(query)
         if document is None:
             # Note is not yet in the database, insert it
@@ -195,6 +180,17 @@ def insert(features):
                     )
                 )
                 updated += 1
+
+        # Check whether this note is the one with the oldest update date (for the upper bound of the next request)
+        last_changed = note['comments'][-1]['date']
+        # Only update the oldest changed date if the note is either new (i.e. no document exists yet) or has more comments than before.
+        # This generally means that no comments were hidden and the last changed date is in fact also the last update date.
+        # And obviously only update the date if it is older than the current oldest date.
+        if (
+            document is None
+            or len(note['comments']) > len(document['comments'])
+        ) and (oldest is None or last_changed < oldest):
+            oldest = last_changed
 
     if len(operations) != 0:
         result = collection.bulk_write(operations, ordered=False)
