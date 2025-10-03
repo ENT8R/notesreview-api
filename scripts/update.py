@@ -151,35 +151,33 @@ def insert(features):
             deleted += 1
             continue
 
+        # Check whether the note is already in the database and proceed with different operations
         document = collection.find_one(query)
         if document is None:
             # Note is not yet in the database, insert it
             operations.append(InsertOne(note))
             inserted += 1
-        else:
+        elif note == document:
             # Note is already stored in the database, the statement is only true if
             # "both dictionaries have the same (key, value) pairs (regardless of ordering)"
             # See https://docs.python.org/3/library/stdtypes.html#dict
-            if note == document:
-                # Note is the same as the one that is already saved, should be ignored
-                ignored += 1
-            else:
-                # Note is different to the one that is already saved, needs to be updated
-                # This may happen quite often as the notes dump seems to contain comments that are actually hidden
-                # So after the initial import, a difference in the comments attached to a note may be detected
-                operations.append(
-                    UpdateOne(
-                        query,
-                        {
-                            '$set': {
-                                'status': note['status'],
-                                'updated_at': note['updated_at'],
-                                'comments': note['comments'],
-                            }
-                        },
-                    )
+            # Note is the same as the one that is already saved, should be ignored
+            ignored += 1
+        else:
+            # Note is different to the one that is already saved, needs to be updated
+            operations.append(
+                UpdateOne(
+                    query,
+                    {
+                        '$set': {
+                            'status': note['status'],
+                            'updated_at': note['updated_at'],
+                            'comments': note['comments'],
+                        }
+                    },
                 )
-                updated += 1
+            )
+            updated += 1
 
         # Check whether this note is the one with the oldest update date (for the upper bound of the next request)
         last_changed = note['comments'][-1]['date']
