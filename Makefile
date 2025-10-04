@@ -1,4 +1,4 @@
-LINT_FILES = app.py api/ scripts/
+LINT_FILES = app.py config.py api/ blueprints/ scripts/
 
 install:
 	pip install -r requirements.txt
