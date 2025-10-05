@@ -1,0 +1,32 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "created_at",
+      "last_validated_at",
+      "token",
+      "user"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "int"
+      },
+      "created_at": {
+        "bsonType": "date"
+      },
+      "last_validated_at": {
+        "bsonType": "date"
+      },
+      "token": {
+        "bsonType": [
+          "null",
+          "string"
+        ]
+      },
+      "user": {
+        "bsonType": "string"
+      }
+    }
+  }
+}

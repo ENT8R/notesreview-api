@@ -3,6 +3,8 @@ from textwrap import dedent
 from motor.motor_asyncio import AsyncIOMotorClient
 from sanic import Blueprint, Sanic
 
+from api.auth import attach_uid
+from blueprints.auth import blueprint as auth
 from blueprints.search import blueprint as search
 from blueprints.status import blueprint as status
 from config import config
@@ -11,8 +13,8 @@ app = Sanic(__name__)
 app.config.update(config)
 
 app.ext.openapi.describe(
-    "notesreview-api",
-    version="0.1.0",
+    'notesreview-api',
+    version='0.1.0',
     description=dedent(
         """\
         # Information
@@ -20,6 +22,12 @@ app.ext.openapi.describe(
         because right now the possibilities are still a little bit limited.
         """
     ),
+)
+app.ext.openapi.add_security_scheme(
+    'token',
+    'http',
+    scheme='bearer',
+    bearer_format='OpenStreetMap OAuth2 Token',
 )
 
 
@@ -38,4 +46,6 @@ async def shutdown(app, loop):
     app.ctx.client.close()
 
 
-app.blueprint(Blueprint.group(status, search, url_prefix='/api'))
+app.blueprint(Blueprint.group(auth, status, search, url_prefix='/api'))
+
+app.register_middleware(attach_uid, 'request')
