@@ -10,22 +10,27 @@
     ],
     "properties": {
       "_id": {
-        "bsonType": "int"
+        "bsonType": "int",
+        "description": "must be an int and is required"
       },
       "created_at": {
-        "bsonType": "date"
+        "bsonType": "date",
+        "description": "must be a date and is required"
       },
       "last_validated_at": {
-        "bsonType": "date"
+        "bsonType": "date",
+        "description": "must be a date and is required"
       },
       "token": {
         "bsonType": [
-          "null",
-          "string"
-        ]
+          "string",
+          "null"
+        ],
+        "description": "must be a string or null and is required"
       },
       "user": {
-        "bsonType": "string"
+        "bsonType": "string",
+        "description": "must be a string and is required"
       }
     }
   }

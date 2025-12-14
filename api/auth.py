@@ -1,8 +1,8 @@
-import hashlib
-import hmac
 from functools import wraps
 
-from sanic import Sanic
+import jwt
+from sanic import HTTPResponse, Sanic
+from sanic.request import Request
 from sanic.response import text
 
 from config import config
@@ -26,33 +26,62 @@ def protected(wrapped):
     return decorator(wrapped)
 
 
-def hash_token(token):
-    return hmac.new(
-        config['TOKEN_SECRET'].encode(),
-        token.encode(),
-        hashlib.sha256,
-    ).hexdigest()
+def decode_token(token):
+    signing_key = Sanic.get_app().ctx.jwks_client.get_signing_key_from_jwt(
+        token
+    )
+    return jwt.decode(
+        token,
+        signing_key,
+        audience=config['OPENSTREETMAP_OAUTH_CLIENT_ID'],
+        options={'verify_exp': False},
+        algorithms=['RS256'],
+    )
 
 
 async def is_authenticated(request):
-    if request.token is None:
+    token = request.token
+    if token is None:
         return False
+
+    info = None
+    try:
+        info = decode_token(token)
+    except jwt.exceptions.InvalidTokenError:
+        return False
+
+    if info is None or 'sub' not in info:
+        return False
+
     return (
-        await Sanic.get_app().ctx.db.users.find_one(
-            {'token': hash_token(request.token)}
-        )
+        await Sanic.get_app().ctx.db.users.find_one({'_id': int(info['sub'])})
         is not None
     )
 
 
 async def attach_uid(request):
+    request.ctx.uid = None
+
     token = request.token
-    # Fetch the uid with the token from the database and attach it
-    # to the request context if a corresponding user exists
     if token is None:
-        request.ctx.uid = None
-    else:
-        user = await Sanic.get_app().ctx.db.users.find_one(
-            {'token': hash_token(request.token)}
-        )
-        request.ctx.uid = None if user is None else user['_id']
+        return
+
+    # Validate the JWT and extract the user id (sub claim)
+    info = None
+    try:
+        info = decode_token(token)
+    except jwt.exceptions.InvalidTokenError:
+        return
+
+    # Do not attach a uid if there is no information after decoding the token
+    if info is None or 'sub' not in info:
+        return
+
+    # Check if the user exists (logged in before) and is currently using this token
+    uid = int(info['sub'])
+    user = await Sanic.get_app().ctx.db.users.find_one({'_id': uid})
+    if user is None or user['token'] != token:
+        return
+
+    # Finally attach the uid to the request context
+    request.ctx.uid = uid

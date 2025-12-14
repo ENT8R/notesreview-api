@@ -69,5 +69,42 @@
         }
       }
     }
+  },
+  "notesreview.users": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": [
+        "_id",
+        "created_at",
+        "last_validated_at",
+        "token",
+        "user"
+      ],
+      "properties": {
+        "_id": {
+          "bsonType": "int",
+          "description": "must be an int and is required"
+        },
+        "created_at": {
+          "bsonType": "date",
+          "description": "must be a date and is required"
+        },
+        "last_validated_at": {
+          "bsonType": "date",
+          "description": "must be a date and is required"
+        },
+        "token": {
+          "bsonType": [
+            "string",
+            "null"
+          ],
+          "description": "must be a string or null and is required"
+        },
+        "user": {
+          "bsonType": "string",
+          "description": "must be a string and is required"
+        }
+      }
+    }
   }
 }
