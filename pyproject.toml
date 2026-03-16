@@ -1,6 +1,17 @@
-[tool.black]
+[tool.ruff]
 line-length = 79
 
-[tool.isort]
-line_length = 79
-profile = "black"
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # isort
+    "I",
+]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"

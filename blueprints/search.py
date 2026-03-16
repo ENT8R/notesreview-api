@@ -196,7 +196,7 @@ async def find(sort, filter, limit):
 
     if limit > config['MAX_LIMIT']:
         return json(
-            {'error': f'Limit must not be higher than {config['MAX_LIMIT']}.'},
+            {'error': f'Limit must not be higher than {config["MAX_LIMIT"]}.'},
             status=400,
         )
 
