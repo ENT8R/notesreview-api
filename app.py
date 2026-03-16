@@ -35,10 +35,9 @@ app.ext.openapi.add_security_scheme(
 
 
 @app.before_server_start
-async def setup(app, loop):
+async def setup(app):
     client = AsyncIOMotorClient(
         f'mongodb://{app.config.DB_USER}:{app.config.DB_PASSWORD}@{app.config.DB_HOST}:27017?authSource=notesreview',
-        io_loop=loop,
     )
     jwks_client = PyJWKClient(app.config.OPENSTREETMAP_OAUTH_JWKS_URI)
 
@@ -48,7 +47,7 @@ async def setup(app, loop):
 
 
 @app.before_server_stop
-async def shutdown(app, loop):
+async def shutdown(app):
     app.ctx.client.close()
 
 
