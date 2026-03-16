@@ -54,7 +54,15 @@ def update(limit=100):
                 'limit': str(limit),
             }
         )
-        response = requests.get(url).json()
+        response = requests.get(
+            url,
+            headers={
+                # Add a valid user agent to prevent the request from being blocked by the OSM API,
+                # see also https://operations.osmfoundation.org/policies/api/
+                'User-Agent': 'notesreview-api'
+            },
+        )
+        response = response.json()
         features = response['features']
 
         stats, oldest = insert(features)
