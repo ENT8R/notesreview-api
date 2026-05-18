@@ -12,6 +12,7 @@ blueprint = Blueprint('Blocklist', url_prefix='/blocklist')
 
 
 @blueprint.post(r'/<id:\d+>')
+@openapi.summary('Hide')
 @openapi.description('Hide a note from all search results')
 @openapi.secured('token')
 @openapi.parameter(
@@ -71,6 +72,7 @@ async def hide(request, id):
 
 
 @blueprint.delete(r'/<id:\d+>')
+@openapi.summary('Unhide')
 @openapi.description('Remove a note from the personal blocklist')
 @openapi.secured('token')
 @openapi.parameter(
@@ -100,6 +102,7 @@ async def unhide(request, id):
 
 
 @blueprint.get('/')
+@openapi.summary('Blocklist')
 @openapi.description('Get all entries of the personal blocklist')
 @openapi.secured('token')
 @openapi.response(
@@ -123,6 +126,7 @@ async def blocklist(request):
 
 
 @blueprint.delete('/')
+@openapi.summary('Delete blocklist')
 @openapi.description('Delete all entries of the personal blocklist')
 @openapi.secured('token')
 @openapi.response(

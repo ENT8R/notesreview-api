@@ -11,6 +11,7 @@ blueprint = Blueprint('Authentication', url_prefix='/auth')
 
 
 @blueprint.get('/login')
+@openapi.summary('Login')
 @openapi.description('Login with a valid OpenID Connect Token (JWT)')
 @openapi.secured('token')
 @openapi.response(
@@ -72,6 +73,7 @@ async def login(request):
 
 
 @blueprint.get('/userinfo')
+@openapi.summary('UserInfo')
 @openapi.description(
     'UserInfo endpoint for the currently used OpenID Connect Token (JWT)'
 )
@@ -116,6 +118,7 @@ async def userinfo(request):
 
 
 @blueprint.get('/logout')
+@openapi.summary('Logout')
 @openapi.description('Logout with a valid OpenID Connect Token (JWT)')
 @openapi.secured('token')
 @openapi.response(

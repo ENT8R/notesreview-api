@@ -12,6 +12,7 @@ blueprint = Blueprint('Watchlist', url_prefix='/watchlist')
 
 
 @blueprint.post(r'/<id:\d+>')
+@openapi.summary('Watch')
 @openapi.description('Add a note to the personal watchlist')
 @openapi.secured('token')
 @openapi.parameter(
@@ -74,6 +75,7 @@ async def watch(request, id):
 
 
 @blueprint.delete(r'/<id:\d+>')
+@openapi.summary('Unwatch')
 @openapi.description('Remove a note from the personal watchlist')
 @openapi.secured('token')
 @openapi.parameter(
@@ -103,6 +105,7 @@ async def unwatch(request, id):
 
 
 @blueprint.get('/')
+@openapi.summary('Watchlist')
 @openapi.description('Get all entries of the personal watchlist')
 @openapi.secured('token')
 @openapi.response(
@@ -144,6 +147,7 @@ async def watchlist(request):
 
 
 @blueprint.delete('/')
+@openapi.summary('Delete watchlist')
 @openapi.description('Delete all entries of the personal watchlist')
 @openapi.secured('token')
 @openapi.response(

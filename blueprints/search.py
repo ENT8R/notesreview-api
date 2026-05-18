@@ -13,6 +13,7 @@ blueprint = Blueprint('Search', url_prefix='/search')
 
 
 @blueprint.route('/', methods=['GET', 'POST'])
+@openapi.summary('Search')
 @openapi.description('Search and filter all notes in the database')
 @openapi.parameter(
     'query',

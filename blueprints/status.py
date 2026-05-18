@@ -10,6 +10,7 @@ blueprint = Blueprint('Status', url_prefix='/status')
 
 
 @blueprint.route('/')
+@openapi.summary('Status')
 @openapi.description(
     'Status information about the database and update frequency'
 )
