@@ -71,6 +71,50 @@ async def login(request):
     return text('OK', 200)
 
 
+@blueprint.get('/userinfo')
+@openapi.description(
+    'UserInfo endpoint for the currently used OpenID Connect Token (JWT)'
+)
+@openapi.secured('token')
+@openapi.response(
+    200,
+    {
+        'application/json': openapi.Object(
+            properties={
+                'iss': openapi.String(),
+                'sub': openapi.String(),
+                'aud': openapi.String(),
+                'exp': openapi.Integer(),
+                'iat': openapi.Integer(),
+                'preferred_name': openapi.String(),
+            }
+        ),
+    },
+    'OK',
+)
+@openapi.response(
+    401,
+    {
+        'text/plain': openapi.String(),
+    },
+    'Invalid token or unauthorized',
+)
+@protected
+async def userinfo(request):
+    token = request.token
+    info = None
+
+    if token is None:
+        return text('No token provided', 401)
+
+    try:
+        info = decode_token(token)
+    except jwt.exceptions.InvalidTokenError:
+        return text('The provided token is invalid', 401)
+
+    return json(info)
+
+
 @blueprint.get('/logout')
 @openapi.description('Logout with a valid OpenID Connect Token (JWT)')
 @openapi.secured('token')
