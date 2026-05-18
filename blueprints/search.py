@@ -9,7 +9,7 @@ from sanic.response import JSONResponse, json
 from sanic_ext import openapi
 
 from api.models.note import Note
-from api.query import Filter, Sort
+from api.query import Filter, Limit, Sort
 from config import config
 
 blueprint = Blueprint('Search', url_prefix='/search')
@@ -205,23 +205,12 @@ async def parse(
         .commented(data.get('commented'))
         .build()
     )
-    limit = data.get('limit', config['DEFAULT_LIMIT'])
-
-    # Apply the default limit in case the argument could not be parsed (e.g. for limit=NaN)
-    try:
-        limit = int(limit)
-    except ValueError:
-        limit = config['DEFAULT_LIMIT']
-
-    if limit > config['MAX_LIMIT']:
-        return json(
-            {'error': f'Limit must not be higher than {config["MAX_LIMIT"]}.'},
-            status=400,
-        )
-
-    # Prevent that a limit of 0 is treated as no limit at all
-    if limit == 0:
-        limit = config['DEFAULT_LIMIT']
+    limit = (
+        Limit(data.get('limit'))
+        .default(config['DEFAULT_LIMIT'])
+        .max(config['MAX_LIMIT'])
+        .build()
+    )
 
     # Determine how to handle entries on the watchlist in the final results
     watchlist = data.get('watchlist', 'include')
