@@ -1,22 +1,40 @@
+import dataclasses
 import os
+from collections.abc import Iterator
+from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# fmt: off
-config = dict(
-    DEFAULT_LIMIT=50,
-    MAX_LIMIT=250,
-    BLOCKLIST_LIMIT=500,
-    WATCHLIST_LIMIT=500,
-    ROOT_PATH=os.path.dirname(os.path.realpath(__file__)),
-    DB_USER=os.environ.get('DB_USER'),
-    DB_PASSWORD=os.environ.get('DB_PASSWORD'),
-    DB_HOST=os.environ.get('DB_HOST'),
-    OPENSTREETMAP_OAUTH_JWKS_URI=os.environ.get('OPENSTREETMAP_OAUTH_JWKS_URI'),
-    OPENSTREETMAP_OAUTH_CLIENT_ID=os.environ.get('OPENSTREETMAP_OAUTH_CLIENT_ID'),
-    CORS_ORIGINS='*',
-    CORS_ALWAYS_SEND=False,
-)
-# fmt: on
+
+def env(name: str) -> str:
+    value = os.environ.get(name)
+    if value is None:
+        raise RuntimeError(f'Missing environment variable: {name}')
+    return value
+
+
+@dataclass(frozen=True)
+class Config:
+    # fmt: off
+    DEFAULT_LIMIT: int = 50
+    MAX_LIMIT: int = 250
+    BLOCKLIST_LIMIT: int = 500
+    WATCHLIST_LIMIT: int = 500
+
+    ROOT_PATH: str = os.path.dirname(os.path.realpath(__file__))
+
+    DB_USER: str = env('DB_USER')
+    DB_PASSWORD: str = env('DB_PASSWORD')
+    DB_HOST: str = env('DB_HOST')
+
+    OPENSTREETMAP_OAUTH_JWKS_URI: str = env('OPENSTREETMAP_OAUTH_JWKS_URI')
+    OPENSTREETMAP_OAUTH_CLIENT_ID: str = env('OPENSTREETMAP_OAUTH_CLIENT_ID')
+
+    CORS_ORIGINS: str = '*'
+    CORS_ALWAYS_SEND: bool = False
+    # fmt: on
+
+    def __iter__(self) -> Iterator:
+        return iter(dataclasses.asdict(self).items())

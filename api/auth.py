@@ -7,7 +7,6 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse, HTTPResponse, text
 
-from config import config
 Params = ParamSpec('Params')
 ResponseType = TypeVar('ResponseType', bound=BaseHTTPResponse)
 
@@ -39,7 +38,7 @@ def decode_token(token: str) -> dict:
     return jwt.decode(
         token,
         signing_key,
-        audience=config['OPENSTREETMAP_OAUTH_CLIENT_ID'],
+        audience=Sanic.get_app().config.OPENSTREETMAP_OAUTH_CLIENT_ID,
         options={'verify_exp': False},
         algorithms=['RS256'],
     )

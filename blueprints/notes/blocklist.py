@@ -7,7 +7,6 @@ from sanic.response import HTTPResponse, JSONResponse, json, text
 from sanic_ext import openapi
 
 from api.auth import protected
-from config import config
 
 blueprint = Blueprint('Blocklist', url_prefix='/blocklist')
 
@@ -45,9 +44,10 @@ async def hide(request: Request, id: int) -> HTTPResponse:
             'user': request.ctx.uid,
         }
     )
-    if documents >= config['BLOCKLIST_LIMIT']:
+    blocklist_limit = Sanic.get_app().config.BLOCKLIST_LIMIT
+    if documents >= blocklist_limit:
         return text(
-            f'Can not add note to blocklist, current limit is at {config["BLOCKLIST_LIMIT"]}',
+            f'Can not add note to blocklist, current limit is at {blocklist_limit}',
             403,
         )
 

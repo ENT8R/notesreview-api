@@ -9,10 +9,10 @@ from blueprints.auth import blueprint as auth
 from blueprints.notes import blueprint as notes
 from blueprints.search import blueprint as search
 from blueprints.status import blueprint as status
-from config import config
+from config import Config
 
 app = Sanic(__name__)
-app.config.update(config)
+app.config.update(Config())
 
 app.ext.openapi.describe(
     'notesreview-api',

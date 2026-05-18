@@ -7,7 +7,6 @@ from sanic.response import HTTPResponse, JSONResponse, json, text
 from sanic_ext import openapi
 
 from api.auth import protected
-from config import config
 
 blueprint = Blueprint('Watchlist', url_prefix='/watchlist')
 
@@ -45,9 +44,10 @@ async def watch(request: Request, id: int) -> HTTPResponse:
             'user': request.ctx.uid,
         }
     )
-    if documents >= config['WATCHLIST_LIMIT']:
+    watchlist_limit = Sanic.get_app().config.WATCHLIST_LIMIT
+    if documents >= watchlist_limit:
         return text(
-            f'Can not add note to watchlist, current limit is at {config["WATCHLIST_LIMIT"]}',
+            f'Can not add note to watchlist, current limit is at {watchlist_limit}',
             403,
         )
 

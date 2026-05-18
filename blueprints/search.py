@@ -10,9 +10,10 @@ from sanic_ext import openapi
 
 from api.models.note import Note
 from api.query import Filter, Limit, Sort
-from config import config
+from config import Config
 
 blueprint = Blueprint('Search', url_prefix='/search')
+config = Config()
 
 
 @blueprint.route('/', methods=['GET', 'POST'])
@@ -140,8 +141,8 @@ blueprint = Blueprint('Search', url_prefix='/search')
     openapi.Integer(
         description='Limit the amount of notes to return',
         minimum=1,
-        maximum=config['MAX_LIMIT'],
-        default=config['DEFAULT_LIMIT'],
+        maximum=config.MAX_LIMIT,
+        default=config.DEFAULT_LIMIT,
     ),
 )
 @openapi.response(
@@ -207,8 +208,8 @@ async def parse(
     )
     limit = (
         Limit(data.get('limit'))
-        .default(config['DEFAULT_LIMIT'])
-        .max(config['MAX_LIMIT'])
+        .default(Sanic.get_app().config.DEFAULT_LIMIT)
+        .max(Sanic.get_app().config.MAX_LIMIT)
         .build()
     )
 

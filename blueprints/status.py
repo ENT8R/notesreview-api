@@ -1,11 +1,9 @@
 import os
 
-from sanic import Blueprint
+from sanic import Blueprint, Sanic
 from sanic.request import Request
 from sanic.response import JSONResponse, json
 from sanic_ext import openapi
-
-from config import config
 
 blueprint = Blueprint('Status', url_prefix='/status')
 
@@ -33,16 +31,11 @@ async def status(request: Request) -> JSONResponse:
     last_sync = None
     last_update = None
 
+    root = Sanic.get_app().config.ROOT_PATH
     with (
-        open(
-            os.path.join(config['ROOT_PATH'], 'scripts', 'LAST_IMPORT.txt')
-        ) as file1,
-        open(
-            os.path.join(config['ROOT_PATH'], 'scripts', 'LAST_SYNC.txt')
-        ) as file2,
-        open(
-            os.path.join(config['ROOT_PATH'], 'scripts', 'LAST_UPDATE.txt')
-        ) as file3,
+        open(os.path.join(root, 'scripts', 'LAST_IMPORT.txt')) as file1,
+        open(os.path.join(root, 'scripts', 'LAST_SYNC.txt')) as file2,
+        open(os.path.join(root, 'scripts', 'LAST_UPDATE.txt')) as file3,
     ):
         last_import = file1.read().strip()
         last_sync = file2.read().strip()
