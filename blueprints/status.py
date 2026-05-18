@@ -1,7 +1,8 @@
 import os
 
 from sanic import Blueprint
-from sanic.response import json
+from sanic.request import Request
+from sanic.response import JSONResponse, json
 from sanic_ext import openapi
 
 from config import config
@@ -27,7 +28,7 @@ blueprint = Blueprint('Status', url_prefix='/status')
     },
     'The response is an object with the currently available status information',
 )
-async def status(request):
+async def status(request: Request) -> JSONResponse:
     last_import = None
     last_sync = None
     last_update = None

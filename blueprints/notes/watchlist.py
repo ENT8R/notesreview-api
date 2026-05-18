@@ -2,7 +2,8 @@ import datetime
 
 import orjson
 from sanic import Blueprint, Sanic
-from sanic.response import json, text
+from sanic.request import Request
+from sanic.response import HTTPResponse, JSONResponse, json, text
 from sanic_ext import openapi
 
 from api.auth import protected
@@ -37,7 +38,7 @@ blueprint = Blueprint('Watchlist', url_prefix='/watchlist')
     'Note can not be added to the watchlist because it would exceed the limit',
 )
 @protected
-async def watch(request, id):
+async def watch(request: Request, id: int) -> HTTPResponse:
     # Apply a limit for the maximum number of notes that a user can add to his watchlist
     documents = await Sanic.get_app().ctx.db.watchlist.count_documents(
         {
@@ -93,7 +94,7 @@ async def watch(request, id):
     'OK',
 )
 @protected
-async def unwatch(request, id):
+async def unwatch(request: Request, id: int) -> HTTPResponse:
     # Remove the watchlist entry for the current user and specified note
     await Sanic.get_app().ctx.db.watchlist.delete_one(
         {
@@ -126,7 +127,7 @@ async def unwatch(request, id):
     'OK',
 )
 @protected
-async def watchlist(request):
+async def watchlist(request: Request) -> JSONResponse:
     # List all notes on the watchlist for the current user
     cursor = Sanic.get_app().ctx.db.watchlist.find(
         {
@@ -158,7 +159,7 @@ async def watchlist(request):
     'OK',
 )
 @protected
-async def delete_watchlist(request):
+async def delete_watchlist(request: Request) -> HTTPResponse:
     # Remove all watchlist entries for the current user
     await Sanic.get_app().ctx.db.watchlist.delete_many(
         {

@@ -2,7 +2,8 @@ import datetime
 
 import jwt
 from sanic import Blueprint, Sanic
-from sanic.response import text
+from sanic.request import Request
+from sanic.response import HTTPResponse, JSONResponse, json, text
 from sanic_ext import openapi
 
 from api.auth import decode_token, protected
@@ -28,7 +29,7 @@ blueprint = Blueprint('Authentication', url_prefix='/auth')
     },
     'Invalid token or unauthorized',
 )
-async def login(request):
+async def login(request: Request) -> HTTPResponse:
     token = request.token
     info = None
 
@@ -102,7 +103,7 @@ async def login(request):
     'Invalid token or unauthorized',
 )
 @protected
-async def userinfo(request):
+async def userinfo(request: Request) -> HTTPResponse | JSONResponse:
     token = request.token
     info = None
 
@@ -129,7 +130,7 @@ async def userinfo(request):
     'OK',
 )
 @protected
-async def logout(request):
+async def logout(request: Request) -> HTTPResponse:
     await Sanic.get_app().ctx.db.users.update_one(
         {
             '_id': request.ctx.uid,

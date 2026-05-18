@@ -6,9 +6,12 @@ install:
 install-dev:
 	pip install -r requirements.dev.txt
 
-lint:
+lint: ty
 	ruff check $(LINT_FILES)
 	ruff format --diff $(LINT_FILES)
+
+ty:
+	ty check $(LINT_FILES) --force-exclude --exclude=scripts/
 
 format:
 	ruff check --fix $(LINT_FILES)

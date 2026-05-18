@@ -1,8 +1,11 @@
 from textwrap import dedent
+from typing import Any
 
 import orjson
+from motor.motor_asyncio import AsyncIOMotorCollection
 from sanic import Blueprint, Sanic
-from sanic.response import json
+from sanic.request import Request, RequestParameters
+from sanic.response import JSONResponse, json
 from sanic_ext import openapi
 
 from api.models.note import Note
@@ -155,9 +158,9 @@ blueprint = Blueprint('Search', url_prefix='/search')
     },
     'In case one of the parameters is invalid, the response contains the error message',
 )
-async def index(request):
+async def index(request: Request) -> JSONResponse:
     try:
-        args = None
+        args = {}
         if request.method == 'GET':
             args = request.args
         elif request.method == 'POST':
@@ -167,11 +170,13 @@ async def index(request):
     except ValueError as error:
         return json({'error': str(error)}, status=400)
 
-    collection, pipeline = build(sort, filter, limit, uid, watchlist)
+    collection, pipeline = build(sort, filter, limit, watchlist, uid)
     return await find(collection, pipeline)
 
 
-async def parse(data, uid):
+async def parse(
+    data: RequestParameters | dict[str, Any], uid: str | None
+) -> tuple[tuple[str | None, int], dict[str, Any], int, str]:
     blocklist = None
     if uid is not None:
         blocklist = await Sanic.get_app().ctx.db.blocklist.distinct(
@@ -180,8 +185,8 @@ async def parse(data, uid):
 
     sort = (
         Sort()
-        .by(data.get('sort_by', 'updated_at'))
-        .order(data.get('order', 'descending'))
+        .by(data.get('sort_by'), 'updated_at')
+        .order(data.get('order'), 'descending')
         .build()
     )
     filter = (
@@ -194,9 +199,9 @@ async def parse(data, uid):
         .anonymous(data.get('anonymous'))
         .author(data.get('author'))
         .user(data.get('user'))
-        .after(data.get('after', None))
-        .before(data.get('before', None))
-        .comments(data.get('comments', None))
+        .after(data.get('after'))
+        .before(data.get('before'))
+        .comments(data.get('comments'))
         .commented(data.get('commented'))
         .build()
     )
@@ -233,11 +238,17 @@ async def parse(data, uid):
 
 
 # Define an aggregation pipeline to allow more complex queries than a call to find() can manage
-def build(sort, filter, limit, uid, watchlist):
+def build(
+    sort: tuple[str | None, int],
+    filter: dict[str, Any],
+    limit: int,
+    watchlist: str,
+    uid: int | None,
+) -> tuple[AsyncIOMotorCollection, list[dict[str, Any]]]:
     # Default collection which will be used by nearly all queries
-    collection = Sanic.get_app().ctx.db.notes
+    collection: AsyncIOMotorCollection = Sanic.get_app().ctx.db.notes
 
-    pipeline = [
+    pipeline: list[dict[str, Any]] = [
         {'$match': filter},
     ]
 
@@ -348,7 +359,9 @@ def build(sort, filter, limit, uid, watchlist):
     return collection, pipeline
 
 
-async def find(collection, pipeline):
+async def find(
+    collection: AsyncIOMotorCollection, pipeline: list[dict[str, Any]]
+) -> JSONResponse:
     cursor = collection.aggregate(pipeline)
     result = []
     async for document in cursor:

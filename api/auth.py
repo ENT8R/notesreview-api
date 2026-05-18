@@ -1,17 +1,23 @@
+from collections.abc import Awaitable, Callable
 from functools import wraps
+from typing import Concatenate, ParamSpec, TypeVar
 
 import jwt
-from sanic import HTTPResponse, Sanic
+from sanic import Sanic
 from sanic.request import Request
-from sanic.response import text
+from sanic.response import BaseHTTPResponse, HTTPResponse, text
 
 from config import config
+Params = ParamSpec('Params')
+ResponseType = TypeVar('ResponseType', bound=BaseHTTPResponse)
 
 
-def protected(wrapped):
-    def decorator(f):
+# fmt: off
+def protected(wrapped: Callable[Concatenate[Request, Params], Awaitable[ResponseType]]) -> Callable[Concatenate[Request, Params], Awaitable[ResponseType | HTTPResponse]]:
+    def decorator(f: Callable[Concatenate[Request, Params], Awaitable[ResponseType]]) -> Callable[Concatenate[Request, Params], Awaitable[ResponseType | HTTPResponse]]:
         @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
+        async def decorated_function(request: Request, *args: Params.args, **kwargs: Params.kwargs) -> ResponseType | HTTPResponse:
+            # fmt: on
             # Call the request handler only if there is a known uid for the
             # token which is already attached to the request context through
             # the middleware below before every request
@@ -26,7 +32,7 @@ def protected(wrapped):
     return decorator(wrapped)
 
 
-def decode_token(token):
+def decode_token(token: str) -> dict:
     signing_key = Sanic.get_app().ctx.jwks_client.get_signing_key_from_jwt(
         token
     )
@@ -39,7 +45,7 @@ def decode_token(token):
     )
 
 
-async def is_authenticated(request):
+async def is_authenticated(request: Request) -> bool:
     token = request.token
     if token is None:
         return False
@@ -59,7 +65,7 @@ async def is_authenticated(request):
     )
 
 
-async def attach_uid(request):
+async def attach_uid(request: Request) -> None:
     request.ctx.uid = None
 
     token = request.token

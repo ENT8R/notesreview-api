@@ -35,7 +35,7 @@ app.ext.openapi.add_security_scheme(
 
 
 @app.before_server_start
-async def setup(app):
+async def setup(app: Sanic) -> None:
     client = AsyncIOMotorClient(
         f'mongodb://{app.config.DB_USER}:{app.config.DB_PASSWORD}@{app.config.DB_HOST}:27017?authSource=notesreview',
     )
@@ -47,7 +47,7 @@ async def setup(app):
 
 
 @app.before_server_stop
-async def shutdown(app):
+async def shutdown(app: Sanic) -> None:
     app.ctx.client.close()
 
 

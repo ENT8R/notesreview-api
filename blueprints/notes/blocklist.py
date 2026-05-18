@@ -2,7 +2,8 @@ import datetime
 
 import orjson
 from sanic import Blueprint, Sanic
-from sanic.response import json, text
+from sanic.request import Request
+from sanic.response import HTTPResponse, JSONResponse, json, text
 from sanic_ext import openapi
 
 from api.auth import protected
@@ -37,7 +38,7 @@ blueprint = Blueprint('Blocklist', url_prefix='/blocklist')
     'Note can not be added to the blocklist because it would exceed the limit',
 )
 @protected
-async def hide(request, id):
+async def hide(request: Request, id: int) -> HTTPResponse:
     # Apply a limit for the maximum number of notes that a user can add to his watchlist
     documents = await Sanic.get_app().ctx.db.blocklist.count_documents(
         {
@@ -90,7 +91,7 @@ async def hide(request, id):
     'OK',
 )
 @protected
-async def unhide(request, id):
+async def unhide(request: Request, id: int) -> HTTPResponse:
     # Remove the blocklist entry for the current user and specified note
     await Sanic.get_app().ctx.db.blocklist.delete_one(
         {
@@ -116,7 +117,7 @@ async def unhide(request, id):
     'OK',
 )
 @protected
-async def blocklist(request):
+async def blocklist(request: Request) -> JSONResponse:
     # List all hidden notes for the current user
     uid = request.ctx.uid
     ids = await Sanic.get_app().ctx.db.blocklist.distinct(
@@ -137,7 +138,7 @@ async def blocklist(request):
     'OK',
 )
 @protected
-async def delete_blocklist(request):
+async def delete_blocklist(request: Request) -> HTTPResponse:
     # Remove all blocklist entries for the current user
     await Sanic.get_app().ctx.db.blocklist.delete_many(
         {
