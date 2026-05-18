@@ -51,6 +51,6 @@ async def shutdown(app):
     app.ctx.client.close()
 
 
-app.blueprint(Blueprint.group(auth, status, search, url_prefix='/api'))
+app.blueprint(Blueprint.group(auth, status, notes, search))
 
 app.register_middleware(attach_uid, 'request')

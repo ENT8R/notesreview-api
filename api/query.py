@@ -47,6 +47,11 @@ class Filter(object):
     def build(self):
         return self.filter
 
+    def exclude(self, blocklist):
+        if blocklist is not None and len(blocklist) > 0:
+            self.filter['_id'] = {'$nin': blocklist}
+        return self
+
     def query(self, query):
         if query is not None:
             self.filter['comments.0.text'] = {

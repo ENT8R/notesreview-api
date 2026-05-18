@@ -1,0 +1,41 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "note",
+      "user",
+      "created_at",
+      "updated_at"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "objectId",
+        "description": "must be an int and is required"
+      },
+      "note": {
+        "bsonType": "int",
+        "description": "must be an int and is required"
+      },
+      "user": {
+        "bsonType": "int",
+        "description": "must be an int and is required"
+      },
+      "comment": {
+        "bsonType": [
+          "string",
+          "null"
+        ],
+        "description": "must be a string or null and is required"
+      },
+      "created_at": {
+        "bsonType": "date",
+        "description": "must be a date and is required"
+      },
+      "updated_at": {
+        "bsonType": "date",
+        "description": "must be a date and is required"
+      }
+    }
+  }
+}

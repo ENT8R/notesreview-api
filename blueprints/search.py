@@ -153,14 +153,21 @@ async def index(request):
             args = request.args
         elif request.method == 'POST':
             args = request.json
-        sort, filter, limit = parse(args)
+        uid = request.ctx.uid if hasattr(request.ctx, 'uid') else None
+        sort, filter, limit = await parse(args, uid)
     except ValueError as error:
         return json({'error': str(error)}, status=400)
 
     return await find(sort, filter, limit)
 
 
-def parse(data):
+async def parse(data, uid):
+    blocklist = None
+    if uid is not None:
+        blocklist = await Sanic.get_app().ctx.db.blocklist.distinct(
+            'note', {'user': uid}
+        )
+
     sort = (
         Sort()
         .by(data.get('sort_by', 'updated_at'))
@@ -169,6 +176,7 @@ def parse(data):
     )
     filter = (
         Filter(sort)
+        .exclude(blocklist)
         .query(data.get('query'))
         .bbox(data.get('bbox'))
         .polygon(data.get('polygon'))
