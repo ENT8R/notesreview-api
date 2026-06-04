@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Any, Self, no_type_check
+from typing import Any, Self
 
 import dateutil.parser
 import lark
@@ -290,20 +290,21 @@ class Users(object):
         ) as file:
             self.grammar = lark.Lark(file.read())
 
-    @no_type_check
     def parse(self, input: str) -> tuple[list[Any], list[Any]]:
         tree = self.grammar.parse(input)
         include = []
         exclude = []
 
         for node in tree.children:
-            if isinstance(node.children[0], lark.Token):
-                include.append(node.children[0].value)
+            if not isinstance(node, lark.Tree):
+                continue
+            expression = node.children[0]
+            if isinstance(expression, lark.Token):
+                include.append(expression.value)
             elif (
-                isinstance(node.children[0], lark.Tree)
-                and node.children[0].data == 'not'
+                isinstance(expression, lark.Tree) and expression.data == 'not'
             ):
-                exclude.append(node.children[0].children[0].value)
+                exclude.append(expression.children[0])
 
         if len(include) + len(exclude) > 10:
             raise ValueError(
