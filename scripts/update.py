@@ -34,8 +34,8 @@ def update(limit: int = 100) -> None:
 
     # Estimate a useful limit with a new note action every 15 seconds
     diff = (upper_bound - last_update).total_seconds()
-    useful_limit = math.ceil(diff * (1 / 15))
-    useful_limit = min(10000, useful_limit)
+    estimated_limit = math.ceil(diff * (1 / 15))
+    estimated_limit = min(10000, estimated_limit)
 
     # 0. Deleted 1. Added, 2. Updated, 3. Ignored
     all_stats = [0, 0, 0, 0]
@@ -54,6 +54,7 @@ def update(limit: int = 100) -> None:
                 'limit': str(limit),
             }
         )
+        print(f'Fetching notes updated before {upper_bound} ({url})')
         response = requests.get(
             url,
             headers={
@@ -72,6 +73,8 @@ def update(limit: int = 100) -> None:
         all_ignored = stats[3] == len(features)
         upper_bound = oldest
 
+        print(f'Determined the oldest note update to be {oldest}')
+
     print(
         textwrap.dedent(
             f"""
@@ -81,7 +84,7 @@ def update(limit: int = 100) -> None:
             Last update:    {last_update.isoformat(timespec='seconds')}
             End of update:  {update_start_time.isoformat(timespec='seconds')}
             Time in seconds since last update: {round(diff)}
-            Expected a useful limit of {useful_limit} while {all_stats[0] + all_stats[1] + all_stats[2]} was actually needed
+            Expected a limit of {estimated_limit} while {all_stats[0] + all_stats[1] + all_stats[2]} was actually needed
             --------------------
             Deleted {all_stats[0]} notes
             Added {all_stats[1]} new notes
@@ -189,6 +192,19 @@ def insert(features: list[dict]) -> tuple[list[int], datetime.datetime | None]:
 
         # Check whether this note is the one with the oldest update date (for the upper bound of the next request)
         last_changed: datetime.datetime = note['comments'][-1]['date']
+
+        if oldest is not None and (
+            (oldest - last_changed).total_seconds() > (60 * 60)
+        ):
+            print(
+                textwrap.dedent(
+                    f"""
+                    Warning: Found a note ({note['_id']}) with a very old update date of {last_changed.isoformat(timespec='seconds')}
+                    This is likely due to hidden comments on this note, so this date should not be used as a upper bound for the next request.
+                    """
+                )
+            )
+
         # Only update the oldest changed date if the note is either new (i.e. no document exists yet) or has more comments than before.
         # This generally means that no comments were hidden and the last changed date is in fact also the last update date.
         # And obviously only update the date if it is older than the current oldest date.

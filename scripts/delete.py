@@ -56,10 +56,10 @@ def delete(ids_in_dump: set[int], last_id: int, delete: bool) -> None:
     # ids_in_dump(_but_not_in_db) contains all notes that are in the dump but not in the database,
     # ids_in_db(_but_not_in_dump) contains all notes that are in the database but not in the dump
     tqdm.write(
-        f'There are currently {len(ids_in_dump)} notes that are in the dump but not in the database'
+        f'There are currently {len(ids_in_dump)} notes that are in the dump but not in the database: {list(ids_in_dump)[0:5]}...'
     )
     tqdm.write(
-        f'There are currently {len(ids_in_db)} notes that are in the database but not in the dump'
+        f'There are currently {len(ids_in_db)} notes that are in the database but not in the dump: {list(ids_in_db)[0:5]}...'
     )
 
     if delete:
