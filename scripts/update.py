@@ -30,7 +30,7 @@ def update(limit: int = 100) -> None:
     # The start time of this function is used at the end to update the timestamp of the last update
     update_start_time = upper_bound
     with open(os.path.join(DIRECTORY, 'LAST_UPDATE.txt')) as file:
-        last_update = dateutil.parser.parse(file.read())
+        last_update = datetime.datetime.fromisoformat(file.read())
 
     # Estimate a useful limit with a new note action every 15 seconds
     diff = (upper_bound - last_update).total_seconds()
@@ -104,7 +104,7 @@ def build_url(query: dict = {}) -> str:
         'limit': '100',
         # The start date needs to be specified because otherwise the value of the
         # 'to-parameter' has no effect (Use the begin of OpenStreetMap notes)
-        'from': dateutil.parser.parse('2013-04-23T00:00:00'),
+        'from': datetime.datetime.fromisoformat('2013-04-23T00:00:00'),
     }
     host = 'https://api.openstreetmap.org/api/0.6/notes/search.json'
     url = host + '?' + urllib.parse.urlencode({**defaults, **query})

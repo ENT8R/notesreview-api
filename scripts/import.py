@@ -3,7 +3,6 @@ import datetime
 import os
 import textwrap
 
-import dateutil.parser
 import iteration
 from dotenv import load_dotenv
 from lxml import etree
@@ -135,7 +134,7 @@ def parse(note: etree.Element) -> list[dict]:
         attributes = element.attrib
 
         comment = {
-            'date': dateutil.parser.parse(attributes['timestamp']),
+            'date': datetime.datetime.fromisoformat(attributes['timestamp']),
             'action': attributes['action'],
             'text': element.text,
         }
