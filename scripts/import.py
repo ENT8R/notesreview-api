@@ -22,7 +22,7 @@ DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
 
 # Parses an XML file containing all notes and inserts them into the database
-def insert(file):
+def insert(file: str) -> None:
     # Notes are inserted/updated in batches of 50000
     BATCH_SIZE = 50000
 
@@ -31,7 +31,7 @@ def insert(file):
     all_stats = [0, 0, 0, 0]
     last_id = 0
 
-    def process_element(element):
+    def process_element(element: etree.Element) -> None:
         nonlocal operations, all_stats, last_id
 
         try:
@@ -110,7 +110,7 @@ def insert(file):
 
 
 # Write operations to the database using the bulk write feature
-def write(operations):
+def write(operations: list[UpdateOne]) -> list[int]:
     result = collection.bulk_write(operations, ordered=False)
     if result.bulk_api_result['writeErrors']:
         client.events.errors.insert_one(
@@ -129,7 +129,7 @@ def write(operations):
 
 
 # Parse the comments and extract only the useful information
-def parse(note):
+def parse(note: etree.Element) -> list[dict]:
     comments = []
     for element in note:
         attributes = element.attrib

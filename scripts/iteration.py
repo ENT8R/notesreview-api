@@ -1,8 +1,19 @@
+from collections.abc import Callable, Iterable
+from typing import Any
+
+from lxml import etree
+
+
 # The previous iteration method used too much memory, but there are some enhancements to improve this:
 # https://stackoverflow.com/questions/7171140/using-python-iterparse-for-large-xml-files
 # https://stackoverflow.com/questions/12160418/why-is-lxml-etree-iterparse-eating-up-all-my-memory
 # https://web.archive.org/web/20210309115224/http://www.ibm.com/developerworks/xml/library/x-hiperfparse/
-def fast_iter(context, func, *args, **kwargs):
+def fast_iter(
+    context: Iterable[tuple[str, etree.Element]],
+    func: Callable,
+    *args: Any,  # noqa: ANN401
+    **kwargs: Any,  # noqa: ANN401
+) -> None:
     """
     http://lxml.de/parsing.html#modifying-the-tree
     Based on Liza Daly's fast_iter

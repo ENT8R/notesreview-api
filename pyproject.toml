@@ -9,6 +9,8 @@ select = [
     "F",
     # isort
     "I",
+    # flake8-annotations
+    "ANN",
 ]
 ignore = ["E501"]
 

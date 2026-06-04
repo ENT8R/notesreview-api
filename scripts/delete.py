@@ -19,11 +19,11 @@ DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
 
 # Find all ids of the notes which are included in the current notes dump
-def ids(file):
+def ids(file: str) -> tuple[set[int], int]:
     ids = set()
     last_id = 0
 
-    def process_element(element):
+    def process_element(element: etree.Element) -> None:
         nonlocal last_id
 
         attributes = element.attrib
@@ -39,7 +39,7 @@ def ids(file):
 
 
 # Delete (or only print the ids of) all notes that are stored in the database but not included in the set of ids
-def delete(ids_in_dump, last_id, delete):
+def delete(ids_in_dump: set[int], last_id: int, delete: bool) -> None:
     ids_in_db = set()
     # Iterate over all documents with an id lower than the last id of the notes dump
     for note in tqdm(

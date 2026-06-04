@@ -24,7 +24,7 @@ DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 # Fills the database up by iterating over the OSM Notes API
 # The current implementation is based on the last update of a note,
 # all notes between now and another given date (the date of the last update) are imported into the database
-def update(limit=100):
+def update(limit: int = 100) -> None:
     # This variable is used in the while loop to ensure only notes of a specific timespan are fetched
     upper_bound = datetime.datetime.now(datetime.timezone.utc)
     # The start time of this function is used at the end to update the timestamp of the last update
@@ -97,7 +97,7 @@ def update(limit=100):
     # ---------------------------------------- #
 
 
-def build_url(query={}):
+def build_url(query: dict = {}) -> str:
     defaults = {
         'sort': 'updated_at',
         'closed': '-1',
@@ -112,7 +112,7 @@ def build_url(query={}):
 
 
 # Parse the comments and extract only the useful information
-def parse(comments):
+def parse(comments: list[dict]) -> list[dict]:
     for comment in comments:
         if 'date' in comment:
             comment['date'] = dateutil.parser.parse(comment['date'])
@@ -129,7 +129,7 @@ def parse(comments):
 # - Adds notes if they are unknown
 # - Updates notes if there is a different version
 # - Ignores notes which are the same
-def insert(features):
+def insert(features: list[dict]) -> tuple[list[int], datetime.datetime | None]:
     operations = []
     deleted = 0
     inserted = 0
@@ -188,7 +188,7 @@ def insert(features):
             updated += 1
 
         # Check whether this note is the one with the oldest update date (for the upper bound of the next request)
-        last_changed = note['comments'][-1]['date']
+        last_changed: datetime.datetime = note['comments'][-1]['date']
         # Only update the oldest changed date if the note is either new (i.e. no document exists yet) or has more comments than before.
         # This generally means that no comments were hidden and the last changed date is in fact also the last update date.
         # And obviously only update the date if it is older than the current oldest date.
