@@ -4,24 +4,25 @@ from typing import Concatenate, ParamSpec, TypeVar
 
 import jwt
 from sanic import Sanic
+from sanic.exceptions import Unauthorized
 from sanic.request import Request
-from sanic.response import BaseHTTPResponse, HTTPResponse, text
+from sanic.response import BaseHTTPResponse
 
 Params = ParamSpec('Params')
 ResponseType = TypeVar('ResponseType', bound=BaseHTTPResponse)
 
 
 # fmt: off
-def protected(wrapped: Callable[Concatenate[Request, Params], Awaitable[ResponseType]]) -> Callable[Concatenate[Request, Params], Awaitable[ResponseType | HTTPResponse]]:
-    def decorator(f: Callable[Concatenate[Request, Params], Awaitable[ResponseType]]) -> Callable[Concatenate[Request, Params], Awaitable[ResponseType | HTTPResponse]]:
+def protected(wrapped: Callable[Concatenate[Request, Params], Awaitable[ResponseType]]) -> Callable[Concatenate[Request, Params], Awaitable[ResponseType]]:
+    def decorator(f: Callable[Concatenate[Request, Params], Awaitable[ResponseType]]) -> Callable[Concatenate[Request, Params], Awaitable[ResponseType]]:
         @wraps(f)
-        async def decorated_function(request: Request, *args: Params.args, **kwargs: Params.kwargs) -> ResponseType | HTTPResponse:
+        async def decorated_function(request: Request, *args: Params.args, **kwargs: Params.kwargs) -> ResponseType:
             # fmt: on
             # Call the request handler only if there is a known uid for the
             # token which is already attached to the request context through
             # the middleware below before every request
             if request.ctx.uid is None:
-                return text('You are unauthorized', 401)
+                raise Unauthorized('You are unauthorized')
             else:
                 response = await f(request, *args, **kwargs)
                 return response
