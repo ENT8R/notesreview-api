@@ -2,7 +2,7 @@ from textwrap import dedent
 from typing import Any
 
 import orjson
-from motor.motor_asyncio import AsyncIOMotorCollection
+from pymongo.asynchronous.collection import AsyncCollection
 from sanic import Blueprint, Sanic
 from sanic.request import Request, RequestParameters
 from sanic.response import JSONResponse, json
@@ -234,9 +234,9 @@ def build(
     limit: int,
     watchlist: str,
     uid: int | None,
-) -> tuple[AsyncIOMotorCollection, list[dict[str, Any]]]:
+) -> tuple[AsyncCollection, list[dict[str, Any]]]:
     # Default collection which will be used by nearly all queries
-    collection: AsyncIOMotorCollection = Sanic.get_app().ctx.db.notes
+    collection: AsyncCollection = Sanic.get_app().ctx.db.notes
 
     pipeline: list[dict[str, Any]] = [
         {'$match': filter},
@@ -346,9 +346,9 @@ def build(
 
 
 async def find(
-    collection: AsyncIOMotorCollection, pipeline: list[dict[str, Any]]
+    collection: AsyncCollection, pipeline: list[dict[str, Any]]
 ) -> JSONResponse:
-    cursor = collection.aggregate(pipeline)
+    cursor = await collection.aggregate(pipeline)
     result = []
     async for document in cursor:
         result.append(document)

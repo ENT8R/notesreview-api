@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 from jwt import PyJWKClient
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 from sanic import Blueprint, Sanic
 
 from api.auth import attach_uid
@@ -36,7 +36,7 @@ app.ext.openapi.add_security_scheme(
 
 @app.before_server_start
 async def setup(app: Sanic) -> None:
-    client = AsyncIOMotorClient(
+    client = AsyncMongoClient(
         f'mongodb://{app.config.DB_USER}:{app.config.DB_PASSWORD}@{app.config.DB_HOST}:27017?authSource=notesreview',
     )
     jwks_client = PyJWKClient(app.config.OPENSTREETMAP_OAUTH_JWKS_URI)
