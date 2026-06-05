@@ -105,15 +105,32 @@ async def login(request: Request) -> HTTPResponse:
 @protected
 async def userinfo(request: Request) -> HTTPResponse | JSONResponse:
     token = request.token
-    info = None
+    info = {}
 
     if token is None:
         return text('No token provided', 401)
 
     try:
-        info = decode_token(token)
+        info['token'] = decode_token(token)
     except jwt.exceptions.InvalidTokenError:
         return text('The provided token is invalid', 401)
+
+    blocklist = await Sanic.get_app().ctx.db.blocklist.count_documents(
+        {
+            'user': request.ctx.uid,
+        }
+    )
+
+    watchlist = await Sanic.get_app().ctx.db.watchlist.count_documents(
+        {
+            'user': request.ctx.uid,
+        }
+    )
+
+    info['notes'] = {
+        'blocklist': blocklist,
+        'watchlist': watchlist,
+    }
 
     return json(info)
 
