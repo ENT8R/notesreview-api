@@ -282,23 +282,19 @@ def build(
             {'$addFields': {'watchlist': {'$arrayElemAt': ['$watchlist', 0]}}},
         ]
 
-        pipelineHideWatchlist = (
-            [
-                # Use a higher limit than allowed before the lookup operation
-                # to limit the set of potential candidates for the exclusion check.
-                # Do not use a hardcoded limit for this but instead calculate it from
-                # the total (allowed) amount of notes on the watchlist of the current user and the actual limit
-                {'$limit': config['WATCHLIST_LIMIT'] + limit},
-            ]
-            + pipelineIncludeWatchlist
-            + [
-                {
-                    '$match': {
-                        'watchlist': {'$eq': None},
-                    },
+        pipelineHideWatchlist = [
+            # Use a higher limit than allowed before the lookup operation
+            # to limit the set of potential candidates for the exclusion check.
+            # Do not use a hardcoded limit for this but instead calculate it from
+            # the total (allowed) amount of notes on the watchlist of the current user and the actual limit
+            {'$limit': Sanic.get_app().config.WATCHLIST_LIMIT + limit},
+            *pipelineIncludeWatchlist,
+            {
+                '$match': {
+                    'watchlist': {'$eq': None},
                 },
-            ]
-        )
+            },
+        ]
 
         pipelineOnlyWatchlist = [
             {
