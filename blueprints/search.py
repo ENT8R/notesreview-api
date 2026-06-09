@@ -352,4 +352,5 @@ async def find(
     result = []
     async for document in cursor:
         result.append(document)
+    await cursor.close()
     return json(result, dumps=orjson.dumps, option=orjson.OPT_NAIVE_UTC)
