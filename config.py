@@ -19,7 +19,7 @@ def env(name: str) -> str:
 class Config:
     # fmt: off
     DEFAULT_LIMIT: int = 50
-    MAX_LIMIT: int = 250
+    MAX_LIMIT: int = 500
     BLOCKLIST_LIMIT: int = 500
     WATCHLIST_LIMIT: int = 500
 
