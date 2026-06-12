@@ -38,6 +38,12 @@ app.ext.openapi.add_security_scheme(
 async def setup(app: Sanic) -> None:
     client = AsyncMongoClient(
         f'mongodb://{app.config.DB_USER}:{app.config.DB_PASSWORD}@{app.config.DB_HOST}:27017?authSource=notesreview',
+        # Wait max. 120 seconds for a response of all (non-monitoring) database operations
+        socketTimeoutMS=120_000,
+        # Wait max. 2 seconds when trying to connect a new socket to a server during monitoring
+        connectTimeoutMS=2_000,
+        # Wait max. 3 seconds when trying to select a server to connect with
+        serverSelectionTimeoutMS=3_000,
     )
     jwks_client = PyJWKClient(app.config.OPENSTREETMAP_OAUTH_JWKS_URI)
 
