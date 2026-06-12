@@ -1,7 +1,9 @@
 import argparse
 import datetime
 import os
+import queue
 import textwrap
+import threading
 
 import iteration
 from dotenv import load_dotenv
@@ -29,6 +31,23 @@ def insert(file: str) -> None:
     # 0. Deleted 1. Added, 2. Updated, 3. Matched
     all_stats = [0, 0, 0, 0]
     last_id = 0
+
+    # The writer thread consumes batches from the queue and writes them to the database
+    write_queue = queue.Queue(maxsize=4)
+    stats_lock = threading.Lock()
+
+    def writer() -> None:
+        nonlocal all_stats
+        while True:
+            batch = write_queue.get()
+            if batch is None:
+                break
+            stats = write(batch)
+            with stats_lock:
+                all_stats = [sum(x) for x in zip(all_stats, stats)]
+
+    writer_thread = threading.Thread(target=writer, daemon=True)
+    writer_thread.start()
 
     def process_element(element: etree.Element) -> None:
         nonlocal operations, all_stats, last_id
@@ -71,8 +90,7 @@ def insert(file: str) -> None:
         )
 
         if len(operations) >= BATCH_SIZE:
-            stats = write(operations)
-            all_stats = [sum(x) for x in zip(all_stats, stats)]
+            write_queue.put(operations)
             operations = []
 
     iteration.fast_iter(
@@ -81,9 +99,11 @@ def insert(file: str) -> None:
     )
 
     if len(operations) > 0:
-        stats = write(operations)
-        all_stats = [sum(x) for x in zip(all_stats, stats)]
-        operations = []
+        write_queue.put(operations)
+
+    # Signal the writer thread to stop
+    write_queue.put(None)
+    writer_thread.join()
 
     # Use the creation date of the last note in the dump as the timestamp of the last import
     last_date = collection.find_one({'_id': last_id})['comments'][0]['date']
