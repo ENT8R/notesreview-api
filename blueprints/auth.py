@@ -84,12 +84,22 @@ async def login(request: Request) -> HTTPResponse:
     {
         'application/json': openapi.Object(
             properties={
-                'iss': openapi.String(),
-                'sub': openapi.String(),
-                'aud': openapi.String(),
-                'exp': openapi.Integer(),
-                'iat': openapi.Integer(),
-                'preferred_name': openapi.String(),
+                'token': openapi.Object(
+                    properties={
+                        'iss': openapi.String(),
+                        'sub': openapi.String(),
+                        'aud': openapi.String(),
+                        'exp': openapi.Integer(),
+                        'iat': openapi.Integer(),
+                        'preferred_name': openapi.String(),
+                    }
+                ),
+                'notes': openapi.Object(
+                    properties={
+                        'blocklist': openapi.Integer(),
+                        'watchlist': openapi.Integer(),
+                    }
+                ),
             }
         ),
     },
