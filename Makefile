@@ -17,5 +17,8 @@ format:
 	ruff check --fix $(LINT_FILES)
 	ruff format $(LINT_FILES)
 
+dev:
+	sanic app:app --dev
+
 download:
 	curl -L -o notes.osn.bz2 https://planet.openstreetmap.org/notes/planet-notes-latest.osn.bz2 && bzip2 -d notes.osn.bz2
