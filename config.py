@@ -1,7 +1,7 @@
 import dataclasses
 import os
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from dotenv import load_dotenv
 
@@ -33,6 +33,7 @@ class Config:
     OPENSTREETMAP_OAUTH_CLIENT_ID: str = env('OPENSTREETMAP_OAUTH_CLIENT_ID')
 
     CORS_ORIGINS: str = '*'
+    CORS_ALLOW_HEADERS: list[str] = field(default_factory=lambda: ['Authorization', 'Content-Type'])
     CORS_ALWAYS_SEND: bool = False
     # fmt: on
 
