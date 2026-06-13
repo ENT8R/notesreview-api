@@ -36,6 +36,14 @@ config = Config()
     ),
 )
 @openapi.parameter(
+    'scope',
+    openapi.String(
+        description='Where to search for the string specified in the query, this can be either all comments of a note or just the initial comment',
+        enum=('all', 'first'),
+        default='first',
+    ),
+)
+@openapi.parameter(
     'bbox',
     openapi.String(
         description='A pair of coordinates specifying a rectangular box where all results are located in',
@@ -193,7 +201,7 @@ async def parse(
     filter = (
         Filter(sort)
         .exclude(blocklist)
-        .query(data.get('query'))
+        .query(data.get('query'), data.get('scope'))
         .bbox(data.get('bbox'))
         .polygon(data.get('polygon'))
         .status(data.get('status'))

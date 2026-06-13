@@ -56,9 +56,13 @@ class Filter(object):
             self.filter['_id'] = {'$nin': blocklist}
         return self
 
-    def query(self, query: str | None) -> Self:
+    def query(self, query: str | None, scope: str | None) -> Self:
         if query is not None:
-            self.filter['comments.0.text'] = {
+            # Allow searching for the query string in all comments, not just the first ones of each note
+            if scope not in [None, 'all', 'first']:
+                raise ValueError('Scope must be one of [all, first]')
+            scope = 'comments.text' if scope == 'all' else 'comments.0.text'
+            self.filter[scope] = {
                 '$regex': (
                     query.removeprefix('regex:')
                     if query.startswith('regex:')
