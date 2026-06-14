@@ -44,16 +44,16 @@ class Sort(object):
 
 class Filter(object):
     def __init__(self, sort: tuple[str | None, int]) -> None:
-        self.filter = {}
+        self._filter = {}
         self.sort = sort
         self.users = Users()
 
     def build(self) -> dict[str, Any]:
-        return self.filter
+        return self._filter
 
     def exclude(self, blocklist: list[int] | None) -> Self:
         if blocklist is not None and len(blocklist) > 0:
-            self.filter['_id'] = {'$nin': blocklist}
+            self._filter['_id'] = {'$nin': blocklist}
         return self
 
     def query(self, query: str | None, scope: str | None) -> Self:
@@ -62,7 +62,7 @@ class Filter(object):
             if scope not in [None, 'all', 'first']:
                 raise ValueError('Scope must be one of [all, first]')
             scope = 'comments.text' if scope == 'all' else 'comments.0.text'
-            self.filter[scope] = {
+            self._filter[scope] = {
                 '$regex': (
                     query.removeprefix('regex:')
                     if query.startswith('regex:')
@@ -75,7 +75,7 @@ class Filter(object):
     def bbox(self, input: str | None) -> Self:
         if input is not None:
             bbox = BoundingBox(input)
-            self.filter['coordinates'] = {
+            self._filter['coordinates'] = {
                 '$geoWithin': {
                     '$box': [
                         # bottom left coordinates (longitude, latitude)
@@ -90,7 +90,7 @@ class Filter(object):
     def polygon(self, input: str | None) -> Self:
         if input is not None:
             polygon = Polygon(input)
-            self.filter['coordinates'] = {
+            self._filter['coordinates'] = {
                 '$geoWithin': {
                     '$geometry': {
                         'type': polygon.type,
@@ -105,7 +105,7 @@ class Filter(object):
             raise ValueError('Status must be one of [all, open, closed]')
 
         if status not in [None, 'all']:
-            self.filter['status'] = status
+            self._filter['status'] = status
         return self
 
     def anonymous(self, anonymous: str | None) -> Self:
@@ -115,17 +115,17 @@ class Filter(object):
         if anonymous is not None:
             # Filtering out anonymous notes means that there must be a user who created the note
             if anonymous == 'hide':
-                self.filter['comments.0.user'] = {'$exists': True}
+                self._filter['comments.0.user'] = {'$exists': True}
             if anonymous == 'only':
-                self.filter['comments.0.user'] = {'$exists': False}
+                self._filter['comments.0.user'] = {'$exists': False}
         return self
 
     def author(self, author: str | None) -> Self:
         if author is not None:
             include, exclude = self.users.parse(author)
-            if 'comments.0.user' not in self.filter:
-                self.filter['comments.0.user'] = {}
-            self.filter['comments.0.user'].update(
+            if 'comments.0.user' not in self._filter:
+                self._filter['comments.0.user'] = {}
+            self._filter['comments.0.user'].update(
                 self.clean({'$in': include, '$nin': exclude})
             )
         return self
@@ -133,9 +133,9 @@ class Filter(object):
     def user(self, user: str | None) -> Self:
         if user is not None:
             include, exclude = self.users.parse(user)
-            if 'comments.user' not in self.filter:
-                self.filter['comments.user'] = {}
-            self.filter['comments.user'].update(
+            if 'comments.user' not in self._filter:
+                self._filter['comments.user'] = {}
+            self._filter['comments.user'].update(
                 self.clean({'$all': include, '$nin': exclude})
             )
         return self
@@ -147,9 +147,9 @@ class Filter(object):
             if key is None:
                 key = 'comments.0.date'
 
-            if key not in self.filter:
-                self.filter[key] = {}
-            self.filter[key]['$gt'] = dateutil.parser.parse(after)
+            if key not in self._filter:
+                self._filter[key] = {}
+            self._filter[key]['$gt'] = dateutil.parser.parse(after)
         return self
 
     def before(self, before: str | None) -> Self:
@@ -159,15 +159,15 @@ class Filter(object):
             if key is None:
                 key = 'comments.0.date'
 
-            if key not in self.filter:
-                self.filter[key] = {}
-            self.filter[key]['$lt'] = dateutil.parser.parse(before)
+            if key not in self._filter:
+                self._filter[key] = {}
+            self._filter[key]['$lt'] = dateutil.parser.parse(before)
         return self
 
     def comments(self, amount_of_comments: str | None) -> Self:
         if amount_of_comments is not None:
             # A comment of the note counts as everything after the original comment
-            self.filter['comments'] = {'$size': int(amount_of_comments) + 1}
+            self._filter['comments'] = {'$size': int(amount_of_comments) + 1}
         return self
 
     def commented(self, commented: str | None) -> Self:
@@ -177,13 +177,13 @@ class Filter(object):
         if commented is not None:
             # Filtering out commented notes means that only the original comment exists
             if commented == 'hide':
-                self.filter['comments'] = {'$size': 1}
+                self._filter['comments'] = {'$size': 1}
             # Showing only commented notes requires the amount of comments to be greater than 1
             # This is not directly allowed (since $size does not accept ranges of values, e.g. via $gt),
             # so instead show only notes with an amount of comments different from 1
             # (notes with 0 comments do not exist)
             if commented == 'only':
-                self.filter['comments'] = {'$not': {'$size': 1}}
+                self._filter['comments'] = {'$not': {'$size': 1}}
         return self
 
     # Remove values that are not defined or empty from a given dictionary
