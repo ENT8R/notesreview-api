@@ -1,5 +1,6 @@
 import os
 import re
+from dataclasses import dataclass
 from typing import Any, Self
 
 import dateutil.parser
@@ -46,7 +47,6 @@ class Filter(object):
     def __init__(self, sort: tuple[str | None, int]) -> None:
         self._filter = {}
         self.sort = sort
-        self.users = Users()
 
     def build(self) -> dict[str, Any]:
         return self._filter
@@ -122,7 +122,7 @@ class Filter(object):
 
     def author(self, author: str | None) -> Self:
         if author is not None:
-            include, exclude = self.users.parse(author)
+            include, exclude = Parsers.Users.parse(author)
             if 'comments.0.user' not in self._filter:
                 self._filter['comments.0.user'] = {}
             self._filter['comments.0.user'].update(
@@ -132,7 +132,7 @@ class Filter(object):
 
     def user(self, user: str | None) -> Self:
         if user is not None:
-            include, exclude = self.users.parse(user)
+            include, exclude = Parsers.Users.parse(user)
             if 'comments.user' not in self._filter:
                 self._filter['comments.user'] = {}
             self._filter['comments.user'].update(
@@ -316,3 +316,8 @@ class Users(object):
             )
 
         return include, exclude
+
+
+@dataclass(frozen=True)
+class Parsers:
+    Users = Users()
