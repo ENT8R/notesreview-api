@@ -1,0 +1,23 @@
+?start: exp
+?exp: or_exp
+
+?or_exp: and_exp (_OR_OP and_exp)*
+?and_exp: literal (_AND_OP? literal)*
+literal: not_exp | atom
+not_exp: _NOT_OP atom
+
+?atom: PHRASE
+     | TERM
+//   | "(" exp ")"
+
+PHRASE.0: ESCAPED_STRING
+// TERM.0: /[^()\s|,\-"]+/
+TERM.0: /[^\s|,\-"]+/
+
+_OR_OP.1: "OR" | "|"
+_AND_OP.1: "AND" | ","
+_NOT_OP.1: "NOT" | "-"
+
+%import common.ESCAPED_STRING
+%import common.WS
+%ignore WS

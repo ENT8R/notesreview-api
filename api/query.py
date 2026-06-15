@@ -46,10 +46,50 @@ class Sort(object):
 class Filter(object):
     def __init__(self, sort: tuple[str | None, int]) -> None:
         self._filter = {}
+        self._query = {}
         self.sort = sort
 
     def build(self) -> dict[str, Any]:
-        return self._filter
+        # If the query is empty or contains just a single word/term without any of the allowed keywords in it,
+        # add the query for this term to the filter and return it directly without any other transformations
+        if len(self._query) == 0 or all(
+            k not in self._query for k in Parsers.Query.allowed_keywords
+        ):
+            self._filter.update(self._query)
+            return self._filter
+
+        # If the filter (for all other inputs except the query) is empty, the query can be used directly
+        # as the filter instead without constructing the superfluous $and array in the next step
+        if len(self._filter) == 0:
+            return self._query
+
+        if len(self._query) > 1:
+            # This error should never be raised, this is just there in case something goes wrong during the parsing
+            raise ValueError('Query has more than a single root node')
+
+        # Transform all other filter arguments (without the query) to a global $and operator,
+        # the resulting filter is then extended in the next step with the query information
+        result = {
+            '$and': [{k: v} for k, v in self._filter.items()],
+        }
+
+        if '$and' in self._query:
+            # If the query is an $and combination as well, concatenate its elements with the global $and filter
+            # https://www.mongodb.com/docs/manual/reference/operator/query/and/
+            result['$and'] += self._query['$and']
+        elif '$or' in self._query or '$nor' in self._query:
+            # If the query is either a $or or a $nor, append it as a single element to the global $and filter
+            # https://www.mongodb.com/docs/manual/reference/operator/query/or/
+            # https://www.mongodb.com/docs/manual/reference/operator/query/nor/
+            result['$and'].append(self._query)
+        else:
+            # This error should never be raised, this is just there in case something goes wrong
+            raise ValueError(
+                'Encountered unexpected keyword in query: '
+                + list(self._query.keys())[0]
+            )
+
+        return result
 
     def exclude(self, blocklist: list[int] | None) -> Self:
         if blocklist is not None and len(blocklist) > 0:
@@ -62,14 +102,7 @@ class Filter(object):
             if scope not in [None, 'all', 'first']:
                 raise ValueError('Scope must be one of [all, first]')
             scope = 'comments.text' if scope == 'all' else 'comments.0.text'
-            self._filter[scope] = {
-                '$regex': (
-                    query.removeprefix('regex:')
-                    if query.startswith('regex:')
-                    else re.escape(query)
-                ),
-                '$options': 'i',
-            }
+            self._query = Parsers.Query.parse(query, scope)
         return self
 
     def bbox(self, input: str | None) -> Self:
@@ -193,6 +226,112 @@ class Filter(object):
             for k, v in dictionary.items()
             if v is not None and (type(v) is list and len(v) > 0)
         }
+
+
+class QueryInterpreter(lark.visitors.Interpreter):
+    def __init__(self, scope: str) -> None:
+        self.scope = scope
+
+    # Build an $or combination of all children by visiting them
+    def or_exp(self, tree: lark.Tree) -> dict[str, Any]:
+        return {
+            '$or': self.visit_children(tree),
+        }
+
+    # Build an $and combination of all children by visiting them
+    def and_exp(self, tree: lark.Tree) -> dict[str, Any]:
+        return {
+            '$and': self.visit_children(tree),
+        }
+
+    # The child of a literal is an atomic expression or its negated form.
+    # If nested expressions are allowed by the grammar, a literal can also have AND/OR
+    # expressions as its child, otherwise only tokens or NOT expressions are possible
+    def literal(self, tree: lark.Tree) -> dict[str, Any]:
+        # Expect only a single child and raise an error if this is not the case
+        if len(tree.children) != 1:
+            raise ValueError('A literal can only have a single child')
+
+        # If the child of this literal is a token, construct the expression of the term directly,
+        # otherwise visit the child (i.e. in case of negations or nested expressions)
+        if type(tree.children[0]) is lark.lexer.Token:
+            return {
+                self.scope: self._term(tree.children[0]),
+            }
+        else:
+            return self.visit(tree.children[0])
+
+    # Build a negated expression of the child by constructing the expression directly.
+    # This works only if the child is a token or a token embedded in a literal.
+    # If nested expressions are allowed by the grammar, a negated expression can also have
+    # AND/OR expressions as its child, which will need to be visited as well
+    def not_exp(self, tree: lark.Tree) -> dict[str, Any]:
+        # Expect only a single child and raise an error if this is not the case
+        if len(tree.children) != 1:
+            raise ValueError(
+                'A negated expression can only have a single child'
+            )
+
+        if type(tree.children[0]) is lark.lexer.Token:
+            # NOT TERM
+            return {
+                self.scope: {
+                    '$not': self._term(tree.children[0]),
+                }
+            }
+        elif (
+            tree.children[0].data == 'literal'
+            and type(tree.children[0].children[0]) is lark.lexer.Token
+        ):
+            # NOT (TERM)
+            return {
+                self.scope: {
+                    '$not': self._term(tree.children[0].children[0]),
+                }
+            }
+        elif tree.children[0].data == 'or_exp':
+            # NOT (and_exp OR and_exp)
+            return {
+                '$nor': self.visit_children(tree),
+            }
+        else:
+            # NOT (literal AND literal)
+            return {
+                '$nor': [self.visit(tree.children[0])],
+            }
+
+    def _term(self, token: lark.lexer.Token) -> dict[str, str]:
+        # Remove leading and trailing quotation marks from the string
+        value = token.value
+        if value.startswith('"') and value.endswith('"'):
+            value = value[1:-1]
+        # Use a regex search in order to find the correct documents
+        return {
+            '$regex': (
+                value.removeprefix('regex:')
+                if value.startswith('regex:')
+                else re.escape(value)
+            ),
+            '$options': 'i',
+        }
+
+
+class Query(object):
+    def __init__(self) -> None:
+        self.allowed_keywords = ('$and', '$or', '$nor')
+        with open(
+            os.path.join(os.path.dirname(__file__), 'grammars', 'query.lark')
+        ) as file:
+            self.grammar = lark.Lark(file.read())
+
+    def parse(self, input: str | None, scope: str) -> dict[str, Any]:
+        if input is not None:
+            try:
+                tree = self.grammar.parse(input)
+                return QueryInterpreter(scope).visit(tree)
+            except lark.exceptions.UnexpectedInput as error:
+                raise ValueError(str(error) + error.get_context(input))
+        return {}
 
 
 class Limit(object):
@@ -321,3 +460,4 @@ class Users(object):
 @dataclass(frozen=True)
 class Parsers:
     Users = Users()
+    Query = Query()
