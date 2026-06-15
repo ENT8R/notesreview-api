@@ -8,9 +8,11 @@ from sanic.request import Request, RequestParameters
 from sanic.response import JSONResponse, json
 from sanic_ext import openapi
 
-from api.models.note import Note
-from api.query import Filter, Limit, Sort
 from config import Config
+from models.note import Note
+from search.filter import Filter
+from search.limit import Limit
+from search.sort import Sort
 
 blueprint = Blueprint('Search', url_prefix='/search')
 config = Config()
