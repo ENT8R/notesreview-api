@@ -35,6 +35,12 @@ class Config:
     CORS_ORIGINS: str = '*'
     CORS_ALLOW_HEADERS: list[str] = field(default_factory=lambda: ['Authorization', 'Content-Type'])
     CORS_ALWAYS_SEND: bool = False
+
+    FORWARDED_SECRET: str = env('FORWARDED_SECRET')
+
+    RESPONSE_TIMEOUT: int = 60
+
+
     # fmt: on
 
     def __iter__(self) -> Iterator:
