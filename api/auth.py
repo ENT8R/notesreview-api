@@ -1,23 +1,21 @@
-from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Concatenate, ParamSpec, TypeVar
 
 import jwt
 from sanic import Sanic
 from sanic.exceptions import Unauthorized
 from sanic.request import Request
-from sanic.response import BaseHTTPResponse
 
-Params = ParamSpec('Params')
-ResponseType = TypeVar('ResponseType', bound=BaseHTTPResponse)
+from . import types
 
 
-# fmt: off
-def protected(wrapped: Callable[Concatenate[Request, Params], Awaitable[ResponseType]]) -> Callable[Concatenate[Request, Params], Awaitable[ResponseType]]:
-    def decorator(f: Callable[Concatenate[Request, Params], Awaitable[ResponseType]]) -> Callable[Concatenate[Request, Params], Awaitable[ResponseType]]:
+def protected(wrapped: types.FunctionType) -> types.FunctionType:
+    def decorator(f: types.FunctionType) -> types.FunctionType:
         @wraps(f)
-        async def decorated_function(request: Request, *args: Params.args, **kwargs: Params.kwargs) -> ResponseType:
-            # fmt: on
+        async def decorated_function(
+            request: Request,
+            *args: types.Params.args,
+            **kwargs: types.Params.kwargs,
+        ) -> types.ResponseType:
             # Call the request handler only if there is a known uid for the
             # token which is already attached to the request context through
             # the middleware below before every request
