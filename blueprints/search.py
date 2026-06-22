@@ -30,6 +30,18 @@ async def index(request: Request) -> JSONResponse:
     except ValueError as error:
         return json({'error': str(error)}, status=400)
 
+    await request.app.dispatch(
+        'notesreview.request.search',
+        context={
+            'request': request,
+            'args': args,
+            'uid': uid,
+            'sort': sort,
+            'filter': filter,
+            'limit': limit,
+        },
+    )
+
     collection, pipeline = build(sort, filter, limit, watchlist, uid)
     return await find(collection, pipeline)
 
