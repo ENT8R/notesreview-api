@@ -54,7 +54,7 @@ async def setup(app: Sanic) -> None:
 
 @app.before_server_stop
 async def shutdown(app: Sanic) -> None:
-    app.ctx.client.close()
+    await app.ctx.client.close()
 
 
 app.blueprint(Blueprint.group(auth, status, notes, search))
