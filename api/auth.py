@@ -13,7 +13,7 @@ def protected(wrapped: types.FunctionType) -> types.FunctionType:
         @wraps(f)
         async def decorated_function(
             request: Request,
-            *args: types.Params.args,
+            *args: types.Params.args,  # ty: ignore[unbound-type-variable]
             **kwargs: types.Params.kwargs,
         ) -> types.ResponseType:
             # Call the request handler only if there is a known uid for the
